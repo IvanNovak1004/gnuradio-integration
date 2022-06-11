@@ -1,0 +1,122 @@
+{
+  "name": "gnuradio-integration",
+	"displayName": "GNURadio-integration",
+	"description": "GNURadio integration",
+	"version": "0.0.1",
+	"license": "MIT"
+	"publisher": "ivannovak1004"
+	"engines": {
+		"vscode": "^1.68.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+        "*"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+                "command": "gnuradio-integration.openGnuradioCompanion",
+                "title": "GNURadio: Open Gnuradio Companion"
+            },
+            {
+                "command": "gnuradio-integration.editInGnuradioCompanion",
+                "title": "GNURadio: Edit In Gnuradio Companion"
+            },
+            {
+                "command": "gnuradio-integration.runFlowgraph",
+                "title": "GNURadio: Compile and Run Flowgraph"
+            },
+            {
+                "command": "gnuradio-integration.compileFlowgraph",
+                "title": "GNURadio: Compile Flowgraph"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "gnuradio-integration.openGnuradioCompanion",
+                    "when": "filesExplorerFocus == true",
+                    "group": "gnuradio-integration@1"
+                },
+                {
+                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "gnuradio-integration@2"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "gnuradio-integration@3"
+                },
+                {
+                    "command": "gnuradio-integration.compileFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "gnuradio-integration@4"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.compileFlowgraph",
+                    "when": "false"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "GNURadio integration configuration",
+            "properties": {
+                "gnuradio-integration.gnuradio-companion.cmd": {
+                    "type": "string",
+                    "default": "gnuradio-companion",
+                    "description": "Path of GNURadio companion",
+                    "scope": "window"
+                },
+                "gnuradio-integration.grcc.cmd": {
+                    "type": "string",
+                    "default": "grcc",
+                    "description": "Path of GNURadio CLI compiler",
+                    "scope": "window"
+                }
+            }
+        },
+        "languages": [
+            {
+                "id": "yaml",
+                "extensions": [
+                    ".grc"
+                ]
+            }
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.68.0",
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^9.1.1",
+		"@types/node": "16.x",
+		"@typescript-eslint/eslint-plugin": "^5.27.0",
+		"@typescript-eslint/parser": "^5.27.0",
+		"eslint": "^8.16.0",
+		"glob": "^8.0.3",
+		"mocha": "^10.0.0",
+		"typescript": "^4.7.2",
+		"@vscode/test-electron": "^2.1.3"
+	}
+}
