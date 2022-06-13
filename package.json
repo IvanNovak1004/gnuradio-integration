@@ -2,7 +2,7 @@
   "name": "gnuradio-integration",
 	"displayName": "GNURadio-integration",
 	"description": "GNURadio integration",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"license": "MIT",
 	"publisher": "ivannovak1004",
 	"engines": {
