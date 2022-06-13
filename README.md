@@ -1,5 +1,5 @@
 # GNURadio Integration 
-![icon](./imgs/gnuradio-integration-icon.svg)
+![icon](./imgs/gnuradio-integration-icon.png)
 
 An extension help you manipulating GNU Radio Companion files form in vsocde. Support "`.grc`" files.
 
