@@ -10,10 +10,10 @@
 	},
 	"repository": {
         "type": "git",
-        "url": "https://github.com/IvanNovak1004/gnuradio-integraion.git"
+        "url": "https://github.com/IvanNovak1004/gnuradio-integration.git"
 	},
 	"icon": "imgs/gnuradio-integration-icon.png",
-	"homepage": "https://github.com/IvanNovak1004/gnuradio-integraion/blob/master/README.md",
+	"homepage": "https://github.com/IvanNovak1004/gnuradio-integration/blob/master/README.md",
 	"keywords": [
 	"gnuradio",
 	"radio",
