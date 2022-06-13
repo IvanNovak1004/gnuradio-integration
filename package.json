@@ -3,8 +3,8 @@
 	"displayName": "GNURadio-integration",
 	"description": "GNURadio integration",
 	"version": "0.1.0",
-	"license": "MIT"
-	"publisher": "ivannovak1004"
+	"license": "MIT",
+	"publisher": "ivannovak1004",
 	"engines": {
 		"vscode": "^1.68.0"
 	},
@@ -12,7 +12,7 @@
         "type": "git",
         "url": "https://github.com/IvanNovak1004/gnuradio-integraion.git"
 	},
-	"icon": "imgs/gnuradio-integration-icon.svg",
+	"icon": "imgs/gnuradio-integration-icon.png",
 	"homepage": "https://github.com/IvanNovak1004/gnuradio-integraion/blob/master/README.md",
 	"keywords": [
 	"gnuradio",
