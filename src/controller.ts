@@ -1,145 +1,138 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { ExecOptions, exec } from 'child_process';
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname, extname } from 'path';
 
-export class GNURadioController{
-    private context:vscode.ExtensionContext;
-    private cp = require('child_process');
-    private fs = require('fs');
-    private path = require('path');
+export class GNURadioController {
+    private context: vscode.ExtensionContext;
     private _outputChannel: vscode.OutputChannel;
+    public readonly extId: string;
 
-    constructor(context:vscode.ExtensionContext){
+    constructor(context: vscode.ExtensionContext) {
         this.context = context;
-        this._outputChannel = vscode.window.createOutputChannel("gnuradio");
+        this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
+        this.extId = context.extension.packageJSON.name;
     }
 
-    private initFolder(filePath:string, {isRelativeToScript = false} = {}) {
-        const sep = this.path.sep;
-        const folderPath = filePath.replace(/(.*[\\\/]).*$/, "$1").replace(/[\\\/]/g, sep);
-
-        const initDir = this.path.isAbsolute(folderPath) ? sep : '';
-        const baseDir = isRelativeToScript ? __dirname : '.';
-        folderPath.split(sep).reduce((parentDir:string, childDir:string) => {
-            const curDir = this.path.resolve(baseDir, parentDir, childDir);
-            try {
-                if(!this.fs.existsSync(curDir)){
-                    this.fs.mkdirSync(curDir);
-                    this._outputChannel.appendLine(`[Info] Directory "${curDir}" created.`);
-                }
-            } catch (err: any) {
-                if (err.code !== 'EEXIST') {
-                    vscode.window.showErrorMessage(err.toString());
-                    throw err;
-                }
-            }
-
-            return curDir;
-        }, initDir);
+    private grc() {
+        return vscode.workspace.getConfiguration().get(`${this.extId}.gnuradio-companion.cmd`);
     }
 
-    private exec(cmd: string, {successMessage="", stdoutPath="", cwd=""} = {}){
-        //this._outputChannel.show(true);
-        this._outputChannel.appendLine(`[Running] ${cmd}`);
-        this.cp.exec(cmd,  {cwd: cwd}, (err:any, stdout:any, stderr:any) => {
-            if(stdout && stdoutPath){
-                this.initFolder(stdoutPath);
-                this.fs.writeFileSync(stdoutPath, stdout, 'utf8');
-            }
-            if(!err){
-                if(stdout){
-                    this._outputChannel.appendLine(`${stdout.toString()}`);
-                }
-                if(stderr){
-                    this._outputChannel.appendLine(`${stderr.toString()}`);
-                }
-            }
-            if (err) {
-                this._outputChannel.appendLine(`[Error] ${stderr.toString()}`);
-                vscode.window.showErrorMessage(err.toString());
-                throw err;
-            } else if(successMessage !== ""){
-                this._outputChannel.appendLine(`[Done] ${successMessage}`);
-                vscode.window.showInformationMessage(successMessage);
-            }
-        });
+    private grcc() {
+        return vscode.workspace.getConfiguration().get(`${this.extId}.grcc.cmd`);
     }
 
-    /**
-     * openGnuradioCompanion
-     */
-    public async openGnuradioCompanion(fileUri: vscode.Uri) {
-        const grc = vscode.workspace.getConfiguration().get('gnuradio-integration.gnuradio-companion.cmd', "");
-        if(!fileUri){
-            var workspaceFolders = vscode.workspace.workspaceFolders;
-            if(workspaceFolders){
-                fileUri = workspaceFolders[0].uri;
+    private print(value: string) {
+        this._outputChannel.appendLine(value);
+    }
+
+    private exec(cmd: string, options: ExecOptions & {
+        successMessage?: string | undefined,
+        stdoutPath?: string | undefined,
+    } = {}) {
+        const ws = vscode.workspace.workspaceFolders;
+        if (!options.cwd && ws) {
+            if (ws.length === 1) {
+                options.cwd = ws[0].uri.fsPath;
+            } else if (ws.length > 1) {
+                return vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
             }
         }
-        this.fs.lstat(fileUri.fsPath, (err:any, stats:any) => {
-            if(err){
-                return vscode.window.showErrorMessage(err);
+        //this._outputChannel.show(true);
+        this.print(`[Running] ${cmd}`);
+        return exec(cmd, options, (err: any, stdout: any, stderr: any) => {
+            if (stdout && options.stdoutPath) {
+                if (mkdirSync(options.stdoutPath, { recursive: true })) {
+                    this.print(`[Info] Directory "${options.stdoutPath}" created.`);
+                }
+                writeFileSync(options.stdoutPath, stdout, 'utf8');
             }
-            let dirName = fileUri.fsPath;
-            if(stats.isFile()){
-                dirName = this.path.dirname(fileUri.fsPath);
+            if (err) {
+                this.print(`[Error] ${stderr.toString()}`);
+                vscode.window.showErrorMessage(err.toString());
+                throw err;
             }
-            this.exec(`"${grc}"`, {cwd:dirName});
+            if (stdout) {
+                this.print(`${stdout.toString()}`);
+            }
+            if (stderr) {
+                this.print(`${stderr.toString()}`);
+            }
+            if (options.successMessage) {
+                this.print(`[Done] ${options.successMessage}`);
+                vscode.window.showInformationMessage(options.successMessage);
+            }
         });
     }
 
-    /**
-     * editInGnuradioCompanion
+    private async execOnFile(cmd: string, fileUri?: vscode.Uri, options: ExecOptions & {
+        successMessage?: string | undefined,
+        stdoutPath?: string | undefined,
+        fileExtension?: string | undefined,
+    } = {}) {
+        if (fileUri === undefined) {
+            return vscode.window.showErrorMessage("File required");
+        }
+        let stat = await vscode.workspace.fs.stat(fileUri);
+        switch (stat.type) {
+            case vscode.FileType.File:
+                break;
+            case vscode.FileType.Directory:
+                return vscode.window.showErrorMessage("File required, but folder was provided");
+            case vscode.FileType.SymbolicLink:
+                return vscode.window.showErrorMessage("File required, but symlink was provided");
+            default:
+                throw Error("File required, but something else was provided");
+        }
+        let path = fileUri.fsPath;
+        if (options.fileExtension && extname(path) !== options.fileExtension) {
+            // FIXME: Is this a sanity check?
+            return vscode.window.showErrorMessage(`Expected file extension "${options.fileExtension}", but found "${extname(path)}"`);
+        }
+        if (!options.cwd) {
+            options.cwd = dirname(path);
+        }
+        return this.exec(`${cmd} "${path}"`, options);
+    }
+
+    /** 
+     * Open GNURadio Companion application.
+     * 
+     * This command runs `gnuradio-companion` in the shell.
      */
-    public async editInGnuradioCompanion(fileUri: vscode.Uri) {
-        const grc = vscode.workspace.getConfiguration().get('gnuradio-integration.gnuradio-companion.cmd', "");
-        this.fs.lstat(fileUri.fsPath, (err:any, stats:any) => {
-            if(err){
-                return vscode.window.showErrorMessage(err);
-            }
-            let dirName = fileUri.fsPath;
-            if(stats.isFile()){
-                dirName = this.path.dirname(fileUri.fsPath);
-            }
-            this.exec(`"${grc}" "${fileUri.fsPath}"`, {cwd:dirName});
-        });
+    public async openGnuradioCompanion() {
+        return this.exec(`"${this.grc()}"`);
+    }
+
+    /** 
+     * Edit the file in GNURadio Companion application.
+     * 
+     * This command runs `gnuradio-companion %f` in the shell, opening the selected file `%f`.
+     */
+    public async editInGnuradioCompanion(fileUri?: vscode.Uri) {
+        return this.execOnFile(`"${this.grc()}"`, fileUri, { fileExtension: '.grc' });
     }
 
     /**
-     * runFlowgraph
+     * Compile the GRC flowgraph file.
+     * 
+     * This command runs `grcc %f` in the shell, producing a Python executable in the same folder as the selected file `%f`.
      */
-    public async runFlowgraph(fileUri: vscode.Uri) {
-        const grcc = vscode.workspace.getConfiguration().get('gnuradio-integration.grcc.cmd', "");
-        this.fs.lstat(fileUri.fsPath, (err:any, stats:any) => {
-            if(err){
-                return vscode.window.showErrorMessage(err);
-            }
-            let dirName = fileUri.fsPath;
-            if(stats.isFile()){
-                dirName = this.path.dirname(fileUri.fsPath);
-            }
-            this.exec(`"${grcc}" -r "${fileUri.fsPath}"`, {cwd:dirName});
-        });
+    public async compileFlowgraph(fileUri?: vscode.Uri) {
+        return this.execOnFile(`"${this.grcc()}"`, fileUri, { fileExtension: '.grc' });
     }
 
     /**
-     * compileFlowgraph
+     * Run the GRC flowgraph file.
+     * 
+     * This command runs `grcc -r %f` in the shell, producing a Python executable in the same folder as the selected file `%f` and running it.
      */
-    public async compileFlowgraph(fileUri: vscode.Uri) {
-        const grcc = vscode.workspace.getConfiguration().get('gnuradio-integration.grcc.cmd', "");
-
-        this.fs.lstat(fileUri.fsPath, (err:any, stats:any) => {
-            if(err){
-                return vscode.window.showErrorMessage(err);
-            }
-            let dirName = fileUri.fsPath;
-            if(stats.isFile()){
-                dirName = this.path.dirname(fileUri.fsPath);
-            }
-            this.exec(`"${grcc}" "${fileUri.fsPath}"`, {
-                successMessage:`Compiled to "${fileUri.fsPath.replace("grc","py")}" successfully`,
-                cwd:dirName
-            });
+    public async runFlowgraph(fileUri?: vscode.Uri) {
+        return this.execOnFile(`"${this.grcc()}" -r`, fileUri, {
+            successMessage: `Compiled to "${fileUri?.fsPath.replace(/".grc$"/, ".py")}" successfully`,
+            fileExtension: '.grc',
         });
     }
 }
