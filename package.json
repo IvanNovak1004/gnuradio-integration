@@ -23,37 +23,37 @@
 		"Other"
 	],
 	"activationEvents": [
-        "*"
+        "workspaceContains:**/*.grc"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
                 "command": "gnuradio-integration.openGnuradioCompanion",
-                "title": "GNURadio: Open Gnuradio Companion"
+                "title": "GNURadio: Open GNURadio Companion"
             },
             {
                 "command": "gnuradio-integration.editInGnuradioCompanion",
-                "title": "GNURadio: Edit In Gnuradio Companion"
-            },
-            {
-                "command": "gnuradio-integration.runFlowgraph",
-                "title": "GNURadio: Compile and Run Flowgraph"
+                "title": "GNURadio: Edit In GNURadio Companion"
             },
             {
                 "command": "gnuradio-integration.compileFlowgraph",
                 "title": "GNURadio: Compile Flowgraph"
+            },
+            {
+                "command": "gnuradio-integration.runFlowgraph",
+                "title": "GNURadio: Compile and Run Flowgraph"
             }
         ],
         "menus": {
             "explorer/context": [
                 {
-                    "command": "gnuradio-integration.openGnuradioCompanion",
-                    "when": "filesExplorerFocus == true",
+                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
                     "group": "gnuradio-integration@1"
                 },
                 {
-                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "command": "gnuradio-integration.compileFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
                     "group": "gnuradio-integration@2"
                 },
@@ -61,11 +61,6 @@
                     "command": "gnuradio-integration.runFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
                     "group": "gnuradio-integration@3"
-                },
-                {
-                    "command": "gnuradio-integration.compileFlowgraph",
-                    "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@4"
                 }
             ],
             "commandPalette": [
@@ -74,28 +69,28 @@
                     "when": "false"
                 },
                 {
-                    "command": "gnuradio-integration.runFlowgraph",
+                    "command": "gnuradio-integration.compileFlowgraph",
                     "when": "false"
                 },
                 {
-                    "command": "gnuradio-integration.compileFlowgraph",
+                    "command": "gnuradio-integration.runFlowgraph",
                     "when": "false"
                 }
             ]
         },
         "configuration": {
-            "title": "GNURadio integration configuration",
+            "title": "GNURadio Integration configuration",
             "properties": {
                 "gnuradio-integration.gnuradio-companion.cmd": {
                     "type": "string",
                     "default": "gnuradio-companion",
-                    "description": "Path of GNURadio companion",
+                    "description": "GNURadio Companion command",
                     "scope": "window"
                 },
                 "gnuradio-integration.grcc.cmd": {
                     "type": "string",
                     "default": "grcc",
-                    "description": "Path of GNURadio CLI compiler",
+                    "description": "GNURadio CLI compiler command",
                     "scope": "window"
                 }
             }

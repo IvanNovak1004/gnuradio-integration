@@ -1,26 +1,23 @@
 # GNURadio Integration
 ![icon](./imgs/gnuradio-integration-icon.png)
 
-An extension help you manipulating GNU Radio Companion files form in vsocde. Support "`.grc`" files.
+An extension to help you manipulate GNURadio Companion files in VSCode. Adds support for "`.grc`" files.
 
 ![preview](./imgs/preview.png)
 
+## Command palette
+
+- **Open GNURadio Companion** - open GNURadio Companion application.
+
 ## Explorer context menu
 
-|No.|Name|Description|
-|:---:|---|---|
-|1|GNURadio: Open Gnuradio Companion|Open Gnurdaio Companion tool|
-|2|GNURadio: Edit In Gnuradio Companion"|Open Gnuradio Companion tool with current flowgraph|
-|3|GNURadio: Compile and Run Flowgraph|Compile and run current flowgraph|
-|4|GNURadio: Compile Flowgraph|Compile current flowgraph`"|
+- **Edit In GNURadio Companion** - edit the selected GRC flowgraph file in GNURadio Companion application;
+- **Compile Flowgraph** - compile the selected GRC flowgraph file;
+- **Compile and Run Flowgraph** - compile and run the selected GRC flowgraph file.
 
-## Properties
+**Warning!** Compilation will overwite the target file without confirmation!
 
-|No.|Name|Description|
-|:---:|---|---|
-|1|`gnuradio-integration.gnuradio-companion.cmd`|GNURadio Companiaon executable CLI command, default "`gnuradio-companion`"|
-|2|`gnuradio-integration.grcc.cmd`|Gnuradio companion compiler command, default "`grcc`"|
+## Extension settings
 
-```text
-Compilation will overwite the target file without confirmation!
-```
+- **GNURadio Companion command** (default: `gnuradio-companion`);
+- **GNURadio CLI compiler command** (default: `grcc`).
