@@ -3,7 +3,8 @@
 import * as vscode from 'vscode';
 import { promisify } from 'util';
 import { ExecOptions, exec as cp_exec } from 'child_process';
-import { dirname, extname } from 'path';
+import { dirname, extname, resolve } from 'path';
+import { existsSync } from 'fs';
 const exec = promisify(cp_exec);
 
 export class GNURadioController {
@@ -23,6 +24,10 @@ export class GNURadioController {
 
     private grcc() {
         return vscode.workspace.getConfiguration().get(`${this.extId}.grcc.cmd`);
+    }
+
+    private modtool() {
+        return vscode.workspace.getConfiguration().get(`${this.extId}.gr-modtool.cmd`);
     }
 
     private print(value: string) {
@@ -47,12 +52,12 @@ export class GNURadioController {
         const proc = exec(cmd, options);
         proc.child.stdout?.on('data', (data) => this.print(`${data}`));
         proc.child.stderr?.on('data', (data) => this.print(`${data}`));
-            if (options.successMessage) {
+        if (options.successMessage) {
             proc.child.on('close', () => {
                 this.print(`[Done] ${options.successMessage}`);
                 vscode.window.showInformationMessage(options.successMessage!);
             });
-            }
+        }
         proc.child.on('error', (err) => {
             this.print(`[Error] ${proc.child.stderr?.toString()}`);
             vscode.window.showErrorMessage(err.toString());
@@ -127,5 +132,68 @@ export class GNURadioController {
             successMessage: `Compiled to "${fileUri?.fsPath.replace(/".grc$"/, ".py")}" successfully`,
             fileExtension: '.grc',
         });
+    }
+
+    /**
+     * Create a new OOT module project.
+     * 
+     * This command runs `gr_modtool newmod %name` in the shell, creating a new CMake project and opening the created folder. 
+     */
+    public async createModule() {
+        try {
+            const newmodName = await vscode.window.showInputBox({
+                title: 'GNURadio: New OOT Module',
+                placeHolder: 'Enter Module Name...',
+                validateInput(value) {
+                    let name = value.trim();
+                    if (!name.length) {
+                        return {
+                            message: 'Name cannot be empty',
+                            severity: vscode.InputBoxValidationSeverity.Error,
+                        };
+                    }
+                    if (!/^([\w,\_,\-]+)$/.test(name)) {
+                        return {
+                            message: 'Name can only contain ASCII letters, digits, and the characters . - _',
+                            severity: vscode.InputBoxValidationSeverity.Error,
+                        };
+                    }
+                    if (name.length < 3) {
+                        return {
+                            message: 'Descriptive names usually contain at least 3 symbols',
+                            severity: vscode.InputBoxValidationSeverity.Warning,
+                            then: null,
+                        };
+                    }
+                },
+            });
+            if (!newmodName) {
+                throw Error('No valid name provided');
+            }
+            const parentDir = await vscode.window.showOpenDialog({
+                canSelectFiles: false,
+                canSelectFolders: true,
+                canSelectMany: false,
+                title: 'Create module in directory'
+            }).then(
+                (value) => value && value.length ? value[0].fsPath : undefined,
+                () => undefined,
+            );
+            if (!parentDir) {
+                throw Error('No directory provided');
+            }
+            const newmodPath = resolve(parentDir, `gr-${newmodName}`);
+            if (existsSync(newmodPath)) {
+                throw Error('Directory already exists');
+            }
+            const exec = this.exec(`"${this.modtool()}" newmod ${newmodName}`, { cwd: parentDir });
+            if (exec) {
+                return vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+            }
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
     }
 }

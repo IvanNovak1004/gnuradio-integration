@@ -43,6 +43,10 @@
             {
                 "command": "gnuradio-integration.runFlowgraph",
                 "title": "GNURadio: Compile and Run Flowgraph"
+            },
+            {
+                "command": "gnuradio-integration.createModule",
+                "title": "GNURadio: Create OOT Module"
             }
         ],
         "menus": {
@@ -84,14 +88,17 @@
                 "gnuradio-integration.gnuradio-companion.cmd": {
                     "type": "string",
                     "default": "gnuradio-companion",
-                    "description": "GNURadio Companion command",
-                    "scope": "window"
+                    "description": "GNURadio Companion command"
                 },
                 "gnuradio-integration.grcc.cmd": {
                     "type": "string",
                     "default": "grcc",
-                    "description": "GNURadio CLI compiler command",
-                    "scope": "window"
+                    "description": "GNURadio CLI compiler command"
+                },
+                "gnuradio-integration.gr-modtool.cmd": {
+                    "type": "string",
+                    "default": "gr_modtool",
+                    "description": "GNURadio modtool command"
                 }
             }
         },
