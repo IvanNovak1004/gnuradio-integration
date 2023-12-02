@@ -1,9 +1,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { ExecOptions, exec } from 'child_process';
-import { mkdirSync, writeFileSync } from 'fs';
+import { promisify } from 'util';
+import { ExecOptions, exec as cp_exec } from 'child_process';
 import { dirname, extname } from 'path';
+const exec = promisify(cp_exec);
 
 export class GNURadioController {
     private context: vscode.ExtensionContext;
@@ -37,34 +38,26 @@ export class GNURadioController {
             if (ws.length === 1) {
                 options.cwd = ws[0].uri.fsPath;
             } else if (ws.length > 1) {
-                return vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
+                vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
+                return undefined;
             }
         }
         //this._outputChannel.show(true);
         this.print(`[Running] ${cmd}`);
-        return exec(cmd, options, (err: any, stdout: any, stderr: any) => {
-            if (stdout && options.stdoutPath) {
-                if (mkdirSync(options.stdoutPath, { recursive: true })) {
-                    this.print(`[Info] Directory "${options.stdoutPath}" created.`);
-                }
-                writeFileSync(options.stdoutPath, stdout, 'utf8');
-            }
-            if (err) {
-                this.print(`[Error] ${stderr.toString()}`);
-                vscode.window.showErrorMessage(err.toString());
-                throw err;
-            }
-            if (stdout) {
-                this.print(`${stdout.toString()}`);
-            }
-            if (stderr) {
-                this.print(`${stderr.toString()}`);
-            }
+        const proc = exec(cmd, options);
+        proc.child.stdout?.on('data', (data) => this.print(`${data}`));
+        proc.child.stderr?.on('data', (data) => this.print(`${data}`));
             if (options.successMessage) {
+            proc.child.on('close', () => {
                 this.print(`[Done] ${options.successMessage}`);
-                vscode.window.showInformationMessage(options.successMessage);
+                vscode.window.showInformationMessage(options.successMessage!);
+            });
             }
+        proc.child.on('error', (err) => {
+            this.print(`[Error] ${proc.child.stderr?.toString()}`);
+            vscode.window.showErrorMessage(err.toString());
         });
+        return proc;
     }
 
     private async execOnFile(cmd: string, fileUri?: vscode.Uri, options: ExecOptions & {
