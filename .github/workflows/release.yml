@@ -1,0 +1,23 @@
+name: Release VSIX package
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-node@v4.0.0
+        with:
+          node-version: '18.x'
+      - run: npm ci
+      - run: npx vsce pack
+      - run: echo "name=$(ls | grep vsix | sort | tail -n 1)" >> $GITHUB_OUTPUT
+        id: identify-package
+      - uses: Shopify/upload-to-release@v2.0.0
+        with:
+          name: ${{steps.identify-package.outputs.name}}
+          path: ${{steps.identify-package.outputs.name}}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
