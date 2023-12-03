@@ -33,6 +33,10 @@ export function activate(context: vscode.ExtensionContext) {
             `${ctl.extId}.${ctl.createModule.name}`,
             ctl.createModule,
             ctl),
+        vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.createPythonBindings.name}`,
+            ctl.createPythonBindings,
+            ctl),
     );
 }
 

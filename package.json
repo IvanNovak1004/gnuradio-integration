@@ -31,23 +31,33 @@
         "commands": [
             {
                 "command": "gnuradio-integration.openGnuradioCompanion",
-                "title": "GNURadio: Open GNURadio Companion"
+                "title": "Open the application",
+                "category": "GNURadio Companion"
             },
             {
                 "command": "gnuradio-integration.editInGnuradioCompanion",
-                "title": "GNURadio: Edit In GNURadio Companion"
+                "title": "Edit Flowgraph",
+                "category": "GNURadio Companion"
             },
             {
                 "command": "gnuradio-integration.compileFlowgraph",
-                "title": "GNURadio: Compile Flowgraph"
+                "title": "Compile Flowgraph",
+                "category": "GNURadio Compiler"
             },
             {
                 "command": "gnuradio-integration.runFlowgraph",
-                "title": "GNURadio: Compile and Run Flowgraph"
+                "title": "Compile and Run Flowgraph",
+                "category": "GNURadio Compiler"
             },
             {
                 "command": "gnuradio-integration.createModule",
-                "title": "GNURadio: Create OOT Module"
+                "title": "Create OOT Module",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createPythonBindings",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
             }
         ],
         "menus": {
@@ -66,20 +76,29 @@
                     "command": "gnuradio-integration.runFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
                     "group": "gnuradio-integration@3"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindings",
+                    "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\\/]gnuradio[\\\\\\\/]/ && resourceFilename != api.h",
+                    "group": "gnuradio-integration@4"
                 }
             ],
             "commandPalette": [
                 {
                     "command": "gnuradio-integration.editInGnuradioCompanion",
-                    "when": "false"
+                    "when": "resourceScheme == file && resourceExtname == .grc"
                 },
                 {
                     "command": "gnuradio-integration.compileFlowgraph",
-                    "when": "false"
+                    "when": "resourceScheme == file && resourceExtname == .grc"
                 },
                 {
                     "command": "gnuradio-integration.runFlowgraph",
-                    "when": "false"
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindings",
+                    "when": "gnuradio-integration.moduleFound"
                 }
             ]
         },

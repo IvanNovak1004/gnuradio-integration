@@ -3,8 +3,8 @@
 import * as vscode from 'vscode';
 import { promisify } from 'util';
 import { ExecOptions, exec as cp_exec } from 'child_process';
-import { dirname, extname, resolve } from 'path';
-import { existsSync } from 'fs';
+import { dirname, extname, basename, resolve } from 'path';
+import { existsSync, readdirSync } from 'fs';
 const exec = promisify(cp_exec);
 
 export class GNURadioController {
@@ -205,10 +205,37 @@ export class GNURadioController {
             if (existsSync(newmodPath)) {
                 throw Error('Directory already exists');
             }
-            const exec = this.exec(`"${this.modtool()}" newmod ${newmodName}`, { cwd: parentDir });
-            if (exec) {
-                return vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+            await this.exec(`"${this.modtool()}" newmod ${newmodName}`, { cwd: parentDir });
+            return vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
             }
+        }
+    }
+
+    public async createPythonBindings(fileUri?: vscode.Uri) {
+        try {
+            let blockName: string | undefined;
+            if (!fileUri) {
+                const headers = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.h')
+                    .map((filename) => filename.slice(0, -2));
+                blockName = await vscode.window.showQuickPick(headers, {
+                    title: 'GNURadio: Python Bindings',
+                    placeHolder: 'Enter block name...',  // TODO: Regular expression (python-bridge?)
+                    canPickMany: false,
+                });
+            } else if (extname(fileUri.fsPath) !== '.h') {
+                throw Error(`Invalid file type: expected a header (.h), found ${extname(fileUri.fsPath)}`);
+            } else {
+                blockName = basename(fileUri.fsPath).slice(0, -2);
+            }
+            if (!blockName) {
+                throw Error('No block name provided');
+            }
+            await this.exec(`"${this.modtool()}" bind ${blockName}`);
+            return vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
