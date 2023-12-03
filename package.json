@@ -55,6 +55,11 @@
                 "category": "GNURadio Module"
             },
             {
+                "command": "gnuradio-integration.createBlock",
+                "title": "Create Block",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.createPythonBindings",
                 "title": "Create Python Bindings",
                 "category": "GNURadio Module"

@@ -45,6 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
             ctl.getModuleInfo,
             ctl),
         vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.createBlock.name}`,
+            ctl.createBlock,
+            ctl),
+        vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.createPythonBindings.name}`,
             ctl.createPythonBindings,
             ctl),

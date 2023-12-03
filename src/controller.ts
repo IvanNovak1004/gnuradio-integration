@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { ExecOptions, exec as cp_exec } from 'child_process';
 import { dirname, extname, basename, resolve } from 'path';
 import { existsSync, readdirSync } from 'fs';
+import { MultiStepInput } from './multiStepInput';
 const exec = promisify(cp_exec);
 
 export class GNURadioController {
@@ -253,6 +254,184 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Create a new block in the OOT module.
+     * 
+     * This command runs `gr_modtool add` in the shell, creating source files and including them into CMakeLists.
+     * 
+     * TODO: Create an HTML form instead of a multi-step input box
+     */
+    public async createBlock() {
+        try {
+            const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+                .filter((filename) => extname(filename) === '.block.yml')
+                .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
+            const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
+                .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
+                .map((filename) => filename.slice(0, -2));
+            const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
+                .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
+                .map((filename) => filename.slice(0, -3));
+            const blocks = new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]);
+
+            async function validateName(value: string) {
+                let name = value.trim();
+                if (!name.length) {
+                    return 'Name cannot be empty';
+                }
+                if (!/^([\w,\_]+)$/.test(name)) {
+                    return 'Name can only contain ASCII letters, digits and underscores';
+                }
+                // if (name.length < 3) {
+                //     return {
+                //         message: 'Descriptive names usually contain at least 3 symbols',
+                //         severity: vscode.InputBoxValidationSeverity.Warning,
+                //         then: null,
+                //     };
+                // }
+                if (blocks.has(name)) {
+                    return 'Block with that name is already present';
+                }
+                return undefined;
+            }
+
+            interface State {
+                title: string;
+                step: number;
+                totalSteps: number;
+                copyright?: string;
+                name?: string;
+                blockType?: vscode.QuickPickItem;
+                language?: vscode.QuickPickItem;
+                addCppTest?: string;
+                addPythonTest?: string;
+                finished: boolean;
+            }
+
+            async function inputAuthor(input: MultiStepInput, state: State) {
+                // TODO: Remember current value when navigating back.
+                state.copyright = await input.showInputBox({
+                    title: state.title,
+                    step: 1,
+                    totalSteps: state.totalSteps,
+                    value: state.copyright || '',
+                    prompt: 'Please specify the copyright holder',
+                    validate: async () => undefined,
+                    shouldResume: async () => false,
+                });
+                return (input: MultiStepInput) => inputName(input, state);
+            }
+
+            async function inputName(input: MultiStepInput, state: State) {
+                // TODO: Remember current value when navigating back.
+                state.name = await input.showInputBox({
+                    title: state.title,
+                    step: 2,
+                    totalSteps: state.totalSteps,
+                    value: state.name || '',
+                    prompt: 'Choose a unique name for the block',
+                    validate: validateName,
+                    shouldResume: async () => false,
+                });
+                return (input: MultiStepInput) => pickBlockType(input, state);
+            }
+
+            async function pickBlockType(input: MultiStepInput, state: State) {
+                const pick = await input.showQuickPick({
+                    title: state.title,
+                    step: 3,
+                    totalSteps: state.totalSteps,
+                    placeholder: 'Pick block type',
+                    items: [
+                        { label: 'general', description: 'gr::block', detail: 'General-purpose block type' },
+                        { label: 'sync', description: 'gr::sync_block', detail: 'Block with synchronous 1:1 input-to-output' },
+                        { label: 'decimator', description: 'gr::sync_decimator', detail: 'Block with synchronous N:1 input-to-output' },
+                        { label: 'interpolator', description: 'gr::sync_interpolator', detail: 'Block with synchronous N:1 input-to-output' },
+                        { label: 'source', description: 'gr::sync_block', detail: 'Source block with outputs, but no stream inputs' },
+                        { label: 'sink', description: 'gr::sync_block', detail: 'Sink block with inputs, but no stream outputs' },
+                        { label: 'tagged_stream', description: 'gr::tagged_stream_block', detail: 'Block with input-to-output flow controlled by input stream tags (e.g. packetized streams)' },
+                        { label: 'hier', description: 'gr::hier_block2', detail: 'Hierarchical container block for other blocks; usually can be described by a flowgraph' },
+                        { label: 'noblock', detail: 'C++ or Python class' },
+                    ],
+                    activeItem: state.blockType,
+                    shouldResume: async () => false,
+                });
+                state.blockType = pick[0];
+                // state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
+                return (input: MultiStepInput) => pickLanguage(input, state);
+            }
+
+            async function pickLanguage(input: MultiStepInput, state: State) {
+                const pick = await input.showQuickPick({
+                    title: state.title,
+                    step: 4,
+                    totalSteps: state.totalSteps,
+                    placeholder: 'Pick implementation language',
+                    items: [
+                        { label: 'Python', description: 'python', iconClass: ['file-icon', 'python-lang-file-icon'] },
+                        { label: 'C++', description: 'cpp', iconClass: 'cpp-lang-file-icon' },
+                    ],
+                    activeItem: state.language,
+                    shouldResume: async () => false,
+                });
+                state.language = pick[0];
+                // if (state.blockType?.label === 'noblock' && state.language.label.includes('Python')) {
+                state.finished = true;
+                //     return;
+                // }
+                // return (input: MultiStepInput) => pickTests(input, state);
+            }
+
+            // async function pickTests(input: MultiStepInput, state: State) {
+            //     let testLanguages: vscode.QuickPickItem[] = [];
+            //     if (state.blockType?.label !== 'noblock') {
+            //         testLanguages.push({ label: 'Python', description: 'python' });
+            //     }
+            //     if (state.language?.label.includes('C++')) {
+            //         testLanguages.push({ label: 'C++', description: 'cpp' });
+            //     }
+            //     const picks = await input.showQuickPick({
+            //         title: state.title,
+            //         step: 5,
+            //         totalSteps: 5,
+            //         placeholder: 'Add QA code',
+            //         items: testLanguages,
+            //         canSelectMany: true,
+            //         shouldResume: async () => false,
+            //     });
+            //     for (var pick of picks) {
+            //         if (pick.description === 'cpp') {
+            //             state.addCppTest = '--add-cpp-qa';
+            //         } else if (pick.description === 'python') {
+            //             state.addPythonTest = '--add-python-qa';
+            //         }
+            //     }
+            //     state.finished = true;
+            // }
+
+            // TODO: `gr_modtool add` requires --add-cpp-qa and/or --add-python-qa
+
+            // TODO: Arguments?
+
+            let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 4, finished: false };
+            await MultiStepInput.run(input => inputAuthor(input, state));
+            if (!state.finished) {
+                return;
+            }
+
+            await this.exec(`"${this.modtool()}" add ${state.name} --copyright ${state.copyright ?? ''} --block-type ${state.blockType!.label} --lang ${state.language!.description} --add-cpp-qa --add-python-qa --argument-list ""`);
+            // ${state.addCppTest ?? ''} ${state.addPythonTest ?? ''}
+            const blockPath = state.language!.description === 'python'
+                ? resolve(this.cwd!, 'python', this.moduleName!, `${state.name}.py`)
+                : resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!, `${state.name}.h`);
+            return vscode.commands.executeCommand('vscode.open', vscode.Uri.file(blockPath));
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
     public async createPythonBindings(fileUri?: vscode.Uri) {
         try {
             let blockName: string | undefined;
@@ -290,10 +469,10 @@ export class GNURadioController {
                     .filter((filename) => extname(filename) === '.block.yml')
                     .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
                 const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
                     .map((filename) => filename.slice(0, -2));
                 const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
                     .map((filename) => filename.slice(0, -3));
                 const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
                 blockName = await vscode.window.showQuickPick(blocks, {
@@ -326,10 +505,10 @@ export class GNURadioController {
                     .filter((filename) => extname(filename) === '.block.yml')
                     .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
                 const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h' && !filename.startsWith('qa_'))
                     .map((filename) => filename.slice(0, -2));
                 const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
                     .map((filename) => filename.slice(0, -3));
                 const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
                 blockName = await vscode.window.showQuickPick(blocks, {
@@ -362,10 +541,10 @@ export class GNURadioController {
                     .filter((filename) => extname(filename) === '.block.yml')
                     .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
                 const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
                     .map((filename) => filename.slice(0, -2));
                 const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
                     .map((filename) => filename.slice(0, -3));
                 const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
                 blockName = await vscode.window.showQuickPick(blocks, {
