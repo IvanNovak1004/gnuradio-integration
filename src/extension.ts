@@ -53,12 +53,20 @@ export function activate(context: vscode.ExtensionContext) {
             ctl.renameBlock,
             ctl),
         vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.disableBlock.name}`,
+            ctl.disableBlock,
+            ctl),
+        vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.removeBlock.name}`,
             ctl.removeBlock,
             ctl),
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.convertXmlToYaml.name}`,
             ctl.convertXmlToYaml,
+            ctl),
+        vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.makeYamlFromImpl.name}`,
+            ctl.makeYamlFromImpl,
             ctl),
     );
 }

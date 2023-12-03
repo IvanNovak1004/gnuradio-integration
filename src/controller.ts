@@ -282,6 +282,42 @@ export class GNURadioController {
         }
     }
 
+    public async disableBlock(blockName?: string) {
+        try {
+            if (!blockName) {
+                // TODO: Read CMakeLists.txt?
+                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+                    .filter((filename) => extname(filename) === '.block.yml')
+                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
+                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .map((filename) => filename.slice(0, -2));
+                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .map((filename) => filename.slice(0, -3));
+                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                blockName = await vscode.window.showQuickPick(blocks, {
+                    title: 'GNURadio: Disable Block',
+                    placeHolder: 'Enter block name...',
+                    canPickMany: false,
+                });
+            }
+            if (!blockName) {
+                throw Error('No block name provided');
+            }
+            // TODO: show files to be disabled?
+            const confirm = await vscode.window.showWarningMessage(`Are you sure you want to disable "${blockName}"?`, { modal: true }, "Yes");
+            if (confirm === 'Yes') {
+                await this.exec(`"${this.modtool()}" disable ${blockName}`);
+                return vscode.window.showInformationMessage(`Block "${blockName}" was disabled`);
+            }
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
     public async removeBlock(blockName?: string) {
         try {
             if (!blockName) {
@@ -410,6 +446,38 @@ export class GNURadioController {
                 return;
             }
             await this.exec(`"${this.modtool()}" update ${blockName}`);
+            return vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
+    public async makeYamlFromImpl(fileUri?: vscode.Uri) {
+        try {
+            let blockName: string | undefined;
+            if (!fileUri) {
+                const cppBlocks = readdirSync(resolve(this.cwd!, 'lib'))
+                    .filter((filename) => filename.endsWith('_impl.cc'))
+                    .map((filename) => filename.slice(0, -8));
+                if (cppBlocks.length === 0) {
+                    return vscode.window.showInformationMessage('No C++ blocks found');
+                }
+                blockName = await vscode.window.showQuickPick(cppBlocks, {
+                    title: 'GNURadio: Make YAML from implementation',
+                    placeHolder: 'Enter block name...',
+                    canPickMany: false,
+                });
+            } else if (!(fileUri.fsPath.endsWith('_impl.cc') || fileUri.fsPath.endsWith('_impl.cpp') || fileUri.fsPath.endsWith('_impl.cxx'))) {
+                throw Error(`Invalid file type: expected C++ source, found ${basename(fileUri.fsPath)}`);
+            } else {
+                blockName = basename(fileUri.fsPath).slice(0, -8);
+            }
+            if (!blockName) {
+                throw Error('No block name provided');
+            }
+            await this.exec(`"${this.modtool()}" makeyaml ${blockName}`);
             return vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
         } catch (err) {
             if (err instanceof Error) {
