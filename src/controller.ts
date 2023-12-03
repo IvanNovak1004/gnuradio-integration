@@ -37,14 +37,16 @@ export class GNURadioController {
 
     public setCwd(cwd?: string) {
         this.cwd = cwd;
-        let moduleFound = false;
-        if (cwd && basename(cwd).startsWith('gr-')) {
-            moduleFound = true;
-            this.moduleName = basename(cwd).slice(3);
-        } else {
-            this.moduleName = undefined;
-        }
-        vscode.commands.executeCommand('setContext', 'gnuradio-integration.moduleFound', moduleFound);
+        this.moduleName = undefined;
+        this.getModuleInfo().then((info) => {
+            let moduleFound = false;
+            if (info) {
+                moduleFound = true;
+                this.moduleName = info['modname'];
+                // TODO: base_dir !== this.cwd
+            }
+            vscode.commands.executeCommand('setContext', 'gnuradio-integration.moduleFound', moduleFound);
+        });
     }
 
     public async checkXml() {
@@ -230,6 +232,20 @@ export class GNURadioController {
             }
             await this.exec(`"${this.modtool()}" newmod ${newmodName}`, { cwd: parentDir });
             return vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
+    public async getModuleInfo() {
+        try {
+            if (!this.cwd) {
+                throw Error("No module detected in the open workspace");
+            }
+            let { stdout: moduleInfoStr, stderr: _ } = await this.exec(`"${this.modtool()}" info --python-readable`);
+            return JSON.parse(moduleInfoStr.slice(0, -1).replace(/\'/g, '"'));
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
