@@ -6,6 +6,21 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [0.2.0] - 2023-12-03
+### Added
+- Added commands for manipulating the OOT module:
+  - Create OOT Module;
+  - Create Block;
+  - Create Python Bindings;
+  - Rename Block;
+  - Remove Block;
+  - Convert XML to YAML.
+- Added module detection in the open workspace
+
+## [0.1.3] - 2023-12-02
+### Added
+- Released VSIX package
+
 ## [0.1.2] - 2023-12-01
 ### Changed
 - Changed author name in the fork
@@ -25,7 +40,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.3...v0.2.0
+[0.1.3]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/IvanNovak1004/gnuradio-integration/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/IvanNovak1004/gnuradio-integration/releases/tag/v0.1.0
