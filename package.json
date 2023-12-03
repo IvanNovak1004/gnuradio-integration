@@ -23,7 +23,8 @@
         "Other"
     ],
     "activationEvents": [
-        "workspaceContains:**/*.grc"
+        "workspaceContains:**/*.grc",
+        "workspaceContains:**/*.block.yml"
     ],
     "main": "./out/extension.js",
     "contributes": {

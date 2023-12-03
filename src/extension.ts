@@ -4,6 +4,14 @@ import { GNURadioController } from './controller';
 export function activate(context: vscode.ExtensionContext) {
     const ctl = new GNURadioController(context);
 
+    vscode.workspace.onDidChangeWorkspaceFolders((e) => {
+        if (e.added.length) {
+            ctl.setCwd(e.added[0].uri.fsPath);
+        } else if (e.removed.length) {
+            ctl.setCwd();
+        }
+    });
+
     context.subscriptions.push(
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.openGnuradioCompanion.name}`,

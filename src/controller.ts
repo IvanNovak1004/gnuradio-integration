@@ -10,12 +10,37 @@ const exec = promisify(cp_exec);
 export class GNURadioController {
     private context: vscode.ExtensionContext;
     private _outputChannel: vscode.OutputChannel;
+    private cwd?: string;
+    private moduleName?: string;
     public readonly extId: string;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
         this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
         this.extId = context.extension.packageJSON.name;
+
+        const ws = vscode.workspace.workspaceFolders;
+        if (!ws) {
+            this.setCwd();
+            return;
+        }
+        this.setCwd(ws[0].uri.fsPath);
+        // } else if (ws.length > 1) {
+        //     vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
+        //     return undefined;
+        // }
+    }
+
+    public setCwd(cwd?: string) {
+        this.cwd = cwd;
+        let moduleFound = false;
+        if (cwd && basename(cwd).startsWith('gr-')) {
+            moduleFound = true;
+            this.moduleName = basename(cwd).slice(3);
+        } else {
+            this.moduleName = undefined;
+        }
+        vscode.commands.executeCommand('setContext', 'gnuradio-integration.moduleFound', moduleFound);
     }
 
     private grc() {
@@ -38,14 +63,8 @@ export class GNURadioController {
         successMessage?: string | undefined,
         stdoutPath?: string | undefined,
     } = {}) {
-        const ws = vscode.workspace.workspaceFolders;
-        if (!options.cwd && ws) {
-            if (ws.length === 1) {
-                options.cwd = ws[0].uri.fsPath;
-            } else if (ws.length > 1) {
-                vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
-                return undefined;
-            }
+        if (!options.cwd) {
+            options.cwd = this.cwd;
         }
         //this._outputChannel.show(true);
         this.print(`[Running] ${cmd}`);
