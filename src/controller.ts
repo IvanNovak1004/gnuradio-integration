@@ -29,6 +29,10 @@ export class GNURadioController {
         //     vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
         //     return undefined;
         // }
+
+        if (vscode.workspace.getConfiguration().get(`${this.extId}.modtool.checkXml`) === true) {
+            this.checkXml();
+        }
     }
 
     public setCwd(cwd?: string) {
@@ -43,16 +47,35 @@ export class GNURadioController {
         vscode.commands.executeCommand('setContext', 'gnuradio-integration.moduleFound', moduleFound);
     }
 
+    public async checkXml() {
+        if (!this.cwd) {
+            return;
+        }
+        const xmlBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+            .filter((filename) => extname(filename) === '.xml');
+        vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', xmlBlocks.length > 0);
+        if (xmlBlocks.length > 0) {
+            const updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', 'Yes', 'No');
+            if (updateAll === 'Yes') {
+                await this.exec(`${this.modtool()} update --complete`);
+                vscode.window.showInformationMessage(`Block definitions written to "grc/". Checking for XML on startup can be disabled in extension settings.`);
+                vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', false);
+            } else {
+                vscode.window.showInformationMessage(`Checking for XML on startup can be disabled in extension settings.`);
+            }
+        }
+    }
+
     private grc() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.gnuradio-companion.cmd`);
+        return vscode.workspace.getConfiguration().get(`${this.extId}.companion.cmd`);
     }
 
     private grcc() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.grcc.cmd`);
+        return vscode.workspace.getConfiguration().get(`${this.extId}.compiler.cmd`);
     }
 
     private modtool() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.gr-modtool.cmd`);
+        return vscode.workspace.getConfiguration().get(`${this.extId}.modtool.cmd`);
     }
 
     private print(value: string) {
@@ -236,6 +259,44 @@ export class GNURadioController {
             }
             await this.exec(`"${this.modtool()}" bind ${blockName}`);
             return vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
+    public async convertXmlToYaml(fileUri?: vscode.Uri) {
+        try {
+            const modNameLength = this.moduleName!.length + 1;
+            let blockName: string | undefined;
+            if (!fileUri) {
+                const xmlBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+                    .filter((filename) => extname(filename) === '.xml')
+                    .map((filename) => filename.slice(modNameLength, -4));
+                if (xmlBlocks.length === 0) {
+                    return vscode.window.showInformationMessage('No XML found, no need to update!');
+                }
+                blockName = await vscode.window.showQuickPick(xmlBlocks, {
+                    title: 'GNURadio: Convert XML to YAML',
+                    placeHolder: 'Enter block name...',
+                    canPickMany: false,
+                });
+            } else if (extname(fileUri.fsPath) !== '.xml') {
+                throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
+            } else {
+                blockName = basename(fileUri.fsPath).slice(modNameLength, -4);
+            }
+            if (!blockName) {
+                const updateAll = await vscode.window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
+                if (updateAll === 'Yes') {
+                    await this.exec(`${this.modtool()} update --complete`);
+                    return vscode.window.showInformationMessage(`Block definitions written to "grc/"`);
+                }
+                return;
+            }
+            await this.exec(`"${this.modtool()}" update ${blockName}`);
+            return vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);

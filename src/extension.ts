@@ -12,6 +12,13 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration('gnuradio-integration.modtool.checkXml') &&
+            vscode.workspace.getConfiguration().get('gnuradio-integration.modtool.checkXml') === true) {
+            ctl.checkXml();
+        }
+    });
+
     context.subscriptions.push(
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.openGnuradioCompanion.name}`,
@@ -36,6 +43,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.createPythonBindings.name}`,
             ctl.createPythonBindings,
+            ctl),
+        vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.convertXmlToYaml.name}`,
+            ctl.convertXmlToYaml,
             ctl),
     );
 }

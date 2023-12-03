@@ -58,6 +58,11 @@
                 "command": "gnuradio-integration.createPythonBindings",
                 "title": "Create Python Bindings",
                 "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.convertXmlToYaml",
+                "title": "Convert XML to YAML",
+                "category": "GNURadio Module"
             }
         ],
         "menus": {
@@ -65,22 +70,27 @@
                 {
                     "command": "gnuradio-integration.editInGnuradioCompanion",
                     "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@1"
+                    "group": "gnuradio-integration"
                 },
                 {
                     "command": "gnuradio-integration.compileFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@2"
+                    "group": "gnuradio-integration"
                 },
                 {
                     "command": "gnuradio-integration.runFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@3"
+                    "group": "gnuradio-integration"
                 },
                 {
                     "command": "gnuradio-integration.createPythonBindings",
                     "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\\/]gnuradio[\\\\\\\/]/ && resourceFilename != api.h",
-                    "group": "gnuradio-integration@4"
+                    "group": "gnuradio-integration"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYaml",
+                    "when": "resourceScheme == file && resourceExtname == .xml",
+                    "group": "gnuradio-integration"
                 }
             ],
             "commandPalette": [
@@ -99,26 +109,35 @@
                 {
                     "command": "gnuradio-integration.createPythonBindings",
                     "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYaml",
+                    "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
                 }
             ]
         },
         "configuration": {
-            "title": "GNURadio Integration configuration",
+            "title": "GNURadio Integration",
             "properties": {
-                "gnuradio-integration.gnuradio-companion.cmd": {
+                "gnuradio-integration.companion.cmd": {
                     "type": "string",
                     "default": "gnuradio-companion",
                     "description": "GNURadio Companion command"
                 },
-                "gnuradio-integration.grcc.cmd": {
+                "gnuradio-integration.compiler.cmd": {
                     "type": "string",
                     "default": "grcc",
                     "description": "GNURadio CLI compiler command"
                 },
-                "gnuradio-integration.gr-modtool.cmd": {
+                "gnuradio-integration.modtool.cmd": {
                     "type": "string",
                     "default": "gr_modtool",
                     "description": "GNURadio modtool command"
+                },
+                "gnuradio-integration.modtool.checkXml": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Check for XML block definitions when opening a module directory"
                 }
             }
         },
