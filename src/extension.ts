@@ -45,6 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
             ctl.createPythonBindings,
             ctl),
         vscode.commands.registerCommand(
+            `${ctl.extId}.${ctl.renameBlock.name}`,
+            ctl.renameBlock,
+            ctl),
+        vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.removeBlock.name}`,
             ctl.removeBlock,
             ctl),

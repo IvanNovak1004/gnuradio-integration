@@ -60,6 +60,11 @@
                 "category": "GNURadio Module"
             },
             {
+                "command": "gnuradio-integration.renameBlock",
+                "title": "Rename Block",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.removeBlock",
                 "title": "Remove Block",
                 "category": "GNURadio Module"
@@ -113,6 +118,10 @@
                 },
                 {
                     "command": "gnuradio-integration.createPythonBindings",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlock",
                     "when": "gnuradio-integration.moduleFound"
                 },
                 {

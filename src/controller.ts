@@ -194,7 +194,7 @@ export class GNURadioController {
                             severity: vscode.InputBoxValidationSeverity.Error,
                         };
                     }
-                    if (!/^([\w,\_,\-]+)$/.test(name)) {
+                    if (!/^([\w,\_,\-,\.]+)$/.test(name)) {
                         return {
                             message: 'Name can only contain ASCII letters, digits, and the characters . - _',
                             severity: vscode.InputBoxValidationSeverity.Error,
@@ -289,12 +289,74 @@ export class GNURadioController {
             if (!blockName) {
                 throw Error('No block name provided');
             }
-            // TODO: show files to remove?
+            // TODO: show files to be removed?
             const confirm = await vscode.window.showWarningMessage(`Are you sure you want to remove "${blockName}"?`, { modal: true }, "Yes");
             if (confirm === 'Yes') {
                 await this.exec(`"${this.modtool()}" rm ${blockName} -y`);
                 return vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
             }
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
+    public async renameBlock(blockName?: string) {
+        try {
+            if (!blockName) {
+                // TODO: Read CMakeLists.txt?
+                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+                    .filter((filename) => extname(filename) === '.block.yml')
+                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
+                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .map((filename) => filename.slice(0, -2));
+                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .map((filename) => filename.slice(0, -3));
+                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                blockName = await vscode.window.showQuickPick(blocks, {
+                    title: 'GNURadio: Rename Block',
+                    placeHolder: 'Enter block name...',
+                    canPickMany: false,
+                });
+            }
+            if (!blockName) {
+                throw Error('No block name provided');
+            }
+            const newBlockName = await vscode.window.showInputBox({
+                title: `GNURadio: Rename "${blockName}"`,
+                placeHolder: 'Enter new block name...',
+                validateInput(value) {
+                    let name = value.trim();
+                    if (!name.length) {
+                        return {
+                            message: 'Name cannot be empty',
+                            severity: vscode.InputBoxValidationSeverity.Error,
+                        };
+                    }
+                    if (!/^([\w,\_]+)$/.test(name)) {
+                        return {
+                            message: 'Name can only contain ASCII letters, digits and underscores',
+                            severity: vscode.InputBoxValidationSeverity.Error,
+                        };
+                    }
+                    if (name.length < 3) {
+                        return {
+                            message: 'Descriptive names usually contain at least 3 symbols',
+                            severity: vscode.InputBoxValidationSeverity.Warning,
+                            then: null,
+                        };
+                    }
+                },
+            });
+            if (!newBlockName) {
+                throw Error('No valid name provided');
+            }
+            // TODO: show files to be renamed?
+            await this.exec(`"${this.modtool()}" rename ${blockName} ${newBlockName}`);
+            return vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
