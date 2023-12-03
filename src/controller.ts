@@ -4,8 +4,8 @@ import * as vscode from 'vscode';
 import { promisify } from 'util';
 import { ExecOptions, exec as cp_exec } from 'child_process';
 import { dirname, extname, basename, resolve } from 'path';
-import { existsSync, readdirSync } from 'fs';
-import { MultiStepInput } from './multiStepInput';
+import { existsSync } from 'fs';
+import * as modtool from './modtool';
 const exec = promisify(cp_exec);
 
 export class GNURadioController {
@@ -36,6 +36,9 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Set the current working directory and detect the module.
+     */
     public setCwd(cwd?: string) {
         this.cwd = cwd;
         this.moduleName = undefined;
@@ -50,12 +53,17 @@ export class GNURadioController {
         });
     }
 
+    /**
+     * Check for old XML block definitions in the OOT module.
+     * 
+     * If any are found, asks if the user wants to update them to YAML.
+     */
     public async checkXml() {
         if (!this.cwd) {
+            vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', false);
             return;
         }
-        const xmlBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-            .filter((filename) => extname(filename) === '.xml');
+        const xmlBlocks = modtool.getGrcBlocks(this.cwd!, this.moduleName!, '.xml');
         vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', xmlBlocks.length > 0);
         if (xmlBlocks.length > 0) {
             const updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', 'Yes', 'No');
@@ -186,47 +194,7 @@ export class GNURadioController {
      */
     public async createModule() {
         try {
-            const newmodName = await vscode.window.showInputBox({
-                title: 'GNURadio: New OOT Module',
-                placeHolder: 'Enter Module Name...',
-                validateInput(value) {
-                    let name = value.trim();
-                    if (!name.length) {
-                        return {
-                            message: 'Name cannot be empty',
-                            severity: vscode.InputBoxValidationSeverity.Error,
-                        };
-                    }
-                    if (!/^([\w,\_,\-,\.]+)$/.test(name)) {
-                        return {
-                            message: 'Name can only contain ASCII letters, digits, and the characters . - _',
-                            severity: vscode.InputBoxValidationSeverity.Error,
-                        };
-                    }
-                    if (name.length < 3) {
-                        return {
-                            message: 'Descriptive names usually contain at least 3 symbols',
-                            severity: vscode.InputBoxValidationSeverity.Warning,
-                            then: null,
-                        };
-                    }
-                },
-            });
-            if (!newmodName) {
-                throw Error('No valid name provided');
-            }
-            const parentDir = await vscode.window.showOpenDialog({
-                canSelectFiles: false,
-                canSelectFolders: true,
-                canSelectMany: false,
-                title: 'Create module in directory'
-            }).then(
-                (value) => value && value.length ? value[0].fsPath : undefined,
-                () => undefined,
-            );
-            if (!parentDir) {
-                throw Error('No directory provided');
-            }
+            const { newmodName, parentDir } = await modtool.createModule();
             const newmodPath = resolve(parentDir, `gr-${newmodName}`);
             if (existsSync(newmodPath)) {
                 throw Error('Directory already exists');
@@ -240,6 +208,11 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Query information about the OOT module.
+     * 
+     * This command runs `gr_modtool info` in the shell and returns a JSON map.
+     */
     public async getModuleInfo() {
         try {
             if (!this.cwd) {
@@ -263,162 +236,11 @@ export class GNURadioController {
      */
     public async createBlock() {
         try {
-            const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-                .filter((filename) => extname(filename) === '.block.yml')
-                .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
-            const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
-                .map((filename) => filename.slice(0, -2));
-            const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
-                .map((filename) => filename.slice(0, -3));
-            const blocks = new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]);
-
-            async function validateName(value: string) {
-                let name = value.trim();
-                if (!name.length) {
-                    return 'Name cannot be empty';
-                }
-                if (!/^([\w,\_]+)$/.test(name)) {
-                    return 'Name can only contain ASCII letters, digits and underscores';
-                }
-                // if (name.length < 3) {
-                //     return {
-                //         message: 'Descriptive names usually contain at least 3 symbols',
-                //         severity: vscode.InputBoxValidationSeverity.Warning,
-                //         then: null,
-                //     };
-                // }
-                if (blocks.has(name)) {
-                    return 'Block with that name is already present';
-                }
-                return undefined;
-            }
-
-            interface State {
-                title: string;
-                step: number;
-                totalSteps: number;
-                copyright?: string;
-                name?: string;
-                blockType?: vscode.QuickPickItem;
-                language?: vscode.QuickPickItem;
-                addCppTest?: string;
-                addPythonTest?: string;
-                finished: boolean;
-            }
-
-            async function inputAuthor(input: MultiStepInput, state: State) {
-                // TODO: Remember current value when navigating back.
-                state.copyright = await input.showInputBox({
-                    title: state.title,
-                    step: 1,
-                    totalSteps: state.totalSteps,
-                    value: state.copyright || '',
-                    prompt: 'Please specify the copyright holder',
-                    validate: async () => undefined,
-                    shouldResume: async () => false,
-                });
-                return (input: MultiStepInput) => inputName(input, state);
-            }
-
-            async function inputName(input: MultiStepInput, state: State) {
-                // TODO: Remember current value when navigating back.
-                state.name = await input.showInputBox({
-                    title: state.title,
-                    step: 2,
-                    totalSteps: state.totalSteps,
-                    value: state.name || '',
-                    prompt: 'Choose a unique name for the block',
-                    validate: validateName,
-                    shouldResume: async () => false,
-                });
-                return (input: MultiStepInput) => pickBlockType(input, state);
-            }
-
-            async function pickBlockType(input: MultiStepInput, state: State) {
-                const pick = await input.showQuickPick({
-                    title: state.title,
-                    step: 3,
-                    totalSteps: state.totalSteps,
-                    placeholder: 'Pick block type',
-                    items: [
-                        { label: 'general', description: 'gr::block', detail: 'General-purpose block type' },
-                        { label: 'sync', description: 'gr::sync_block', detail: 'Block with synchronous 1:1 input-to-output' },
-                        { label: 'decimator', description: 'gr::sync_decimator', detail: 'Block with synchronous N:1 input-to-output' },
-                        { label: 'interpolator', description: 'gr::sync_interpolator', detail: 'Block with synchronous N:1 input-to-output' },
-                        { label: 'source', description: 'gr::sync_block', detail: 'Source block with outputs, but no stream inputs' },
-                        { label: 'sink', description: 'gr::sync_block', detail: 'Sink block with inputs, but no stream outputs' },
-                        { label: 'tagged_stream', description: 'gr::tagged_stream_block', detail: 'Block with input-to-output flow controlled by input stream tags (e.g. packetized streams)' },
-                        { label: 'hier', description: 'gr::hier_block2', detail: 'Hierarchical container block for other blocks; usually can be described by a flowgraph' },
-                        { label: 'noblock', detail: 'C++ or Python class' },
-                    ],
-                    activeItem: state.blockType,
-                    shouldResume: async () => false,
-                });
-                state.blockType = pick[0];
-                // state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
-                return (input: MultiStepInput) => pickLanguage(input, state);
-            }
-
-            async function pickLanguage(input: MultiStepInput, state: State) {
-                const pick = await input.showQuickPick({
-                    title: state.title,
-                    step: 4,
-                    totalSteps: state.totalSteps,
-                    placeholder: 'Pick implementation language',
-                    items: [
-                        { label: 'Python', description: 'python', iconClass: ['file-icon', 'python-lang-file-icon'] },
-                        { label: 'C++', description: 'cpp', iconClass: 'cpp-lang-file-icon' },
-                    ],
-                    activeItem: state.language,
-                    shouldResume: async () => false,
-                });
-                state.language = pick[0];
-                // if (state.blockType?.label === 'noblock' && state.language.label.includes('Python')) {
-                state.finished = true;
-                //     return;
-                // }
-                // return (input: MultiStepInput) => pickTests(input, state);
-            }
-
-            // async function pickTests(input: MultiStepInput, state: State) {
-            //     let testLanguages: vscode.QuickPickItem[] = [];
-            //     if (state.blockType?.label !== 'noblock') {
-            //         testLanguages.push({ label: 'Python', description: 'python' });
-            //     }
-            //     if (state.language?.label.includes('C++')) {
-            //         testLanguages.push({ label: 'C++', description: 'cpp' });
-            //     }
-            //     const picks = await input.showQuickPick({
-            //         title: state.title,
-            //         step: 5,
-            //         totalSteps: 5,
-            //         placeholder: 'Add QA code',
-            //         items: testLanguages,
-            //         canSelectMany: true,
-            //         shouldResume: async () => false,
-            //     });
-            //     for (var pick of picks) {
-            //         if (pick.description === 'cpp') {
-            //             state.addCppTest = '--add-cpp-qa';
-            //         } else if (pick.description === 'python') {
-            //             state.addPythonTest = '--add-python-qa';
-            //         }
-            //     }
-            //     state.finished = true;
-            // }
-
-            // TODO: `gr_modtool add` requires --add-cpp-qa and/or --add-python-qa
-
-            // TODO: Arguments?
-
-            let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 4, finished: false };
-            await MultiStepInput.run(input => inputAuthor(input, state));
-            if (!state.finished) {
+            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            const state = await modtool.createBlock(existingBlocks);
+            if (!state) {
                 return;
             }
-
             await this.exec(`"${this.modtool()}" add ${state.name} --copyright ${state.copyright ?? ''} --block-type ${state.blockType!.label} --lang ${state.language!.description} --add-cpp-qa --add-python-qa --argument-list ""`);
             // ${state.addCppTest ?? ''} ${state.addPythonTest ?? ''}
             const blockPath = state.language!.description === 'python'
@@ -432,22 +254,25 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Create Python bindings for the block.
+     * 
+     * This command runs `gr_modtool bind %f` in the shell, generating pybind11 code based on the block's C++ header.
+     */
     public async createPythonBindings(fileUri?: vscode.Uri) {
         try {
             let blockName: string | undefined;
             if (!fileUri) {
-                const headers = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
-                    .map((filename) => filename.slice(0, -2));
+                const headers = modtool.getCppBlocks(this.cwd!, this.moduleName!);
                 blockName = await vscode.window.showQuickPick(headers, {
                     title: 'GNURadio: Python Bindings',
                     placeHolder: 'Enter block name...',  // TODO: Regular expression (python-bridge?)
                     canPickMany: false,
                 });
-            } else if (extname(fileUri.fsPath) !== '.h') {
-                throw Error(`Invalid file type: expected a header (.h), found ${extname(fileUri.fsPath)}`);
+            } else if (modtool.filterCppBlocks(fileUri.fsPath)) {
+                throw Error(`Invalid file type: expected a header (.h), found ${basename(fileUri.fsPath)}`);
             } else {
-                blockName = basename(fileUri.fsPath).slice(0, -2);
+                blockName = modtool.mapCppBlocks(fileUri.fsPath);
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -461,20 +286,17 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Disable the block.
+     * 
+     * This command runs `gr_modtool disable %f`, commenting out all related lines in CMakeLists.
+     * 
+     * TODO: `gr_modtool disable` does not work correctly.
+     */
     public async disableBlock(blockName?: string) {
         try {
             if (!blockName) {
-                // TODO: Read CMakeLists.txt?
-                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-                    .filter((filename) => extname(filename) === '.block.yml')
-                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
-                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
-                    .map((filename) => filename.slice(0, -2));
-                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
-                    .map((filename) => filename.slice(0, -3));
-                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = await vscode.window.showQuickPick(blocks, {
                     title: 'GNURadio: Disable Block',
                     placeHolder: 'Enter block name...',
@@ -497,20 +319,15 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Remove the block from the OOT module.
+     * 
+     * This command runs `gr_modtool rm %f`, removing all related files and changing CMakeLists.
+     */
     public async removeBlock(blockName?: string) {
         try {
             if (!blockName) {
-                // TODO: Read CMakeLists.txt?
-                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-                    .filter((filename) => extname(filename) === '.block.yml')
-                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
-                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h' && !filename.startsWith('qa_'))
-                    .map((filename) => filename.slice(0, -2));
-                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
-                    .map((filename) => filename.slice(0, -3));
-                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = await vscode.window.showQuickPick(blocks, {
                     title: 'GNURadio: Remove Block',
                     placeHolder: 'Enter block name...',
@@ -533,20 +350,15 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Change the block's name.
+     * 
+     * This command runs `gr_modtool rename %f`, renaming all related files and changing CMakeLists.
+     */
     public async renameBlock(blockName?: string) {
         try {
             if (!blockName) {
-                // TODO: Read CMakeLists.txt?
-                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-                    .filter((filename) => extname(filename) === '.block.yml')
-                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
-                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h' && filename !== 'api.h')
-                    .map((filename) => filename.slice(0, -2));
-                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.py' && filename !== '__init__.py' && !filename.startsWith('qa_'))
-                    .map((filename) => filename.slice(0, -3));
-                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = await vscode.window.showQuickPick(blocks, {
                     title: 'GNURadio: Rename Block',
                     placeHolder: 'Enter block name...',
@@ -595,14 +407,16 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Convert old XML block definitions to YAML.
+     * 
+     * This command runs `gr_modtool update %f`, generating a new YAML definition and deleting the old XML.
+     */
     public async convertXmlToYaml(fileUri?: vscode.Uri) {
         try {
-            const modNameLength = this.moduleName!.length + 1;
             let blockName: string | undefined;
             if (!fileUri) {
-                const xmlBlocks = readdirSync(resolve(this.cwd!, 'grc'))
-                    .filter((filename) => extname(filename) === '.xml')
-                    .map((filename) => filename.slice(modNameLength, -4));
+                const xmlBlocks = modtool.getGrcBlocks(this.cwd!, this.moduleName!, '.xml');
                 if (xmlBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No XML found, no need to update!');
                 }
@@ -611,10 +425,10 @@ export class GNURadioController {
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
-            } else if (extname(fileUri.fsPath) !== '.xml') {
+            } else if (modtool.filterGrcBlocks('.xml')(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
             } else {
-                blockName = basename(fileUri.fsPath).slice(modNameLength, -4);
+                blockName = modtool.mapGrcBlocks('.xml')(fileUri.fsPath);
             }
             if (!blockName) {
                 const updateAll = await vscode.window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
@@ -633,13 +447,18 @@ export class GNURadioController {
         }
     }
 
+    /**
+     * Make YAML definition the block implementation.
+     * 
+     * This command runs `gr_modtool makeyaml %f`, generating a YAML definition based on the block's implementation.
+     * 
+     * TODO: `gr_modtool makeyaml` does not work correctly.
+     */
     public async makeYamlFromImpl(fileUri?: vscode.Uri) {
         try {
             let blockName: string | undefined;
             if (!fileUri) {
-                const cppBlocks = readdirSync(resolve(this.cwd!, 'lib'))
-                    .filter((filename) => filename.endsWith('_impl.cc'))
-                    .map((filename) => filename.slice(0, -8));
+                const cppBlocks = modtool.getCppBlockImpl(this.cwd!);
                 if (cppBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No C++ blocks found');
                 }
@@ -648,10 +467,10 @@ export class GNURadioController {
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
-            } else if (!(fileUri.fsPath.endsWith('_impl.cc') || fileUri.fsPath.endsWith('_impl.cpp') || fileUri.fsPath.endsWith('_impl.cxx'))) {
+            } else if (!modtool.filterCppBlockImpl(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected C++ source, found ${basename(fileUri.fsPath)}`);
             } else {
-                blockName = basename(fileUri.fsPath).slice(0, -8);
+                blockName = modtool.mapCppBlockImpl(fileUri.fsPath);
             }
             if (!blockName) {
                 throw Error('No block name provided');
