@@ -60,6 +60,11 @@
                 "category": "GNURadio Module"
             },
             {
+                "command": "gnuradio-integration.removeBlock",
+                "title": "Remove Block",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.convertXmlToYaml",
                 "title": "Convert XML to YAML",
                 "category": "GNURadio Module"
@@ -108,6 +113,10 @@
                 },
                 {
                     "command": "gnuradio-integration.createPythonBindings",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlock",
                     "when": "gnuradio-integration.moduleFound"
                 },
                 {

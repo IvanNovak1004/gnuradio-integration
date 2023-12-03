@@ -242,7 +242,7 @@ export class GNURadioController {
             let blockName: string | undefined;
             if (!fileUri) {
                 const headers = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
-                    .filter((filename) => extname(filename) === '.h')
+                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
                     .map((filename) => filename.slice(0, -2));
                 blockName = await vscode.window.showQuickPick(headers, {
                     title: 'GNURadio: Python Bindings',
@@ -259,6 +259,42 @@ export class GNURadioController {
             }
             await this.exec(`"${this.modtool()}" bind ${blockName}`);
             return vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
+        } catch (err) {
+            if (err instanceof Error) {
+                return vscode.window.showErrorMessage(err.message);
+            }
+        }
+    }
+
+    public async removeBlock(blockName?: string) {
+        try {
+            if (!blockName) {
+                // TODO: Read CMakeLists.txt?
+                const grcBlocks = readdirSync(resolve(this.cwd!, 'grc'))
+                    .filter((filename) => extname(filename) === '.block.yml')
+                    .map((filename) => filename.slice(this.moduleName!.length + 1, -10));
+                const cppBlocks = readdirSync(resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.h' && basename(filename) !== 'api.h')
+                    .map((filename) => filename.slice(0, -2));
+                const pyBlocks = readdirSync(resolve(this.cwd!, 'python', this.moduleName!))
+                    .filter((filename) => extname(filename) === '.py' && basename(filename) !== '__init__.py')
+                    .map((filename) => filename.slice(0, -3));
+                const blocks = Array.from(new Set([...grcBlocks, ...cppBlocks, ...pyBlocks]));
+                blockName = await vscode.window.showQuickPick(blocks, {
+                    title: 'GNURadio: Remove Block',
+                    placeHolder: 'Enter block name...',
+                    canPickMany: false,
+                });
+            }
+            if (!blockName) {
+                throw Error('No block name provided');
+            }
+            // TODO: show files to remove?
+            const confirm = await vscode.window.showWarningMessage(`Are you sure you want to remove "${blockName}"?`, { modal: true }, "Yes");
+            if (confirm === 'Yes') {
+                await this.exec(`"${this.modtool()}" rm ${blockName} -y`);
+                return vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
+            }
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
