@@ -46,20 +46,23 @@ export class GNURadioController {
      * If any are found, asks if the user wants to update them to YAML.
      */
     public async checkXml() {
+        const xmlFoundContextKey = `${this.extId}.xmlFound`;
         if (!this.cwd) {
-            vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', false);
+            vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
             return;
         }
         const xmlBlocks = modtool.getGrcBlocks(this.cwd!, this.moduleName!, '.xml');
-        vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', xmlBlocks.length > 0);
+        vscode.commands.executeCommand('setContext', xmlFoundContextKey, xmlBlocks.length > 0);
         if (xmlBlocks.length > 0) {
-            const updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', 'Yes', 'No');
+            const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
+            let updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
             if (updateAll === 'Yes') {
                 await this.exec(`${this.modtool()} update --complete`);
-                vscode.window.showInformationMessage(`Block definitions written to "grc/". Checking for XML on startup can be disabled in extension settings.`);
-                vscode.commands.executeCommand('setContext', 'gnuradio-integration.xmlFound', false);
-            } else {
-                vscode.window.showInformationMessage(`Checking for XML on startup can be disabled in extension settings.`);
+                vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
+                updateAll = await vscode.window.showInformationMessage('Block definitions written to "grc/".', dontShowAgain);
+            }
+            if (updateAll === dontShowAgain) {
+                vscode.workspace.getConfiguration(this.extId).update('checkXml', false, vscode.ConfigurationTarget.Global);
             }
         }
     }

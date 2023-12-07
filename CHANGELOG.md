@@ -8,6 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Added automatic copyright value (`git config user.name`) when creating a block
 - Added dependency on builtin Git extension for calling `git` properly
+- Added "Don't Show Again" option to XML check notifications 
 
 ## [0.2.0] - 2023-12-03
 ### Added
