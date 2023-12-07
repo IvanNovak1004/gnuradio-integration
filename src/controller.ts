@@ -19,38 +19,25 @@ export class GNURadioController {
         this.context = context;
         this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
         this.extId = context.extension.packageJSON.name;
-
-        const ws = vscode.workspace.workspaceFolders;
-        if (!ws) {
-            this.setCwd();
-            return;
-        }
-        this.setCwd(ws[0].uri.fsPath);
-        // } else if (ws.length > 1) {
-        //     vscode.window.showErrorMessage("Multi-root workspace detected, what's the cwd?");
-        //     return undefined;
-        // }
-
-        if (vscode.workspace.getConfiguration().get(`${this.extId}.modtool.checkXml`) === true) {
-            this.checkXml();
-        }
     }
 
     /**
      * Set the current working directory and detect the module.
      */
-    public setCwd(cwd?: string) {
+    public async setCwd(cwd?: string) {
         this.cwd = cwd;
         this.moduleName = undefined;
-        this.getModuleInfo().then((info) => {
             let moduleFound = false;
+        const info = await this.getModuleInfo();
             if (info) {
                 moduleFound = true;
                 this.moduleName = info['modname'];
                 // TODO: base_dir !== this.cwd
+            if (vscode.workspace.getConfiguration(this.extId).get('modtool.checkXml') === true) {
+                this.checkXml();
             }
-            vscode.commands.executeCommand('setContext', 'gnuradio-integration.moduleFound', moduleFound);
-        });
+        }
+        vscode.commands.executeCommand('setContext', `${this.extId}.moduleFound`, moduleFound);
     }
 
     /**
@@ -78,15 +65,15 @@ export class GNURadioController {
     }
 
     private grc() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.companion.cmd`);
+        return vscode.workspace.getConfiguration(this.extId).get('companion.cmd');
     }
 
     private grcc() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.compiler.cmd`);
+        return vscode.workspace.getConfiguration(this.extId).get('compiler.cmd');
     }
 
     private modtool() {
-        return vscode.workspace.getConfiguration().get(`${this.extId}.modtool.cmd`);
+        return vscode.workspace.getConfiguration(this.extId).get('modtool.cmd');
     }
 
     private print(value: string) {
