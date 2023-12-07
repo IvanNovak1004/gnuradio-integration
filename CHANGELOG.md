@@ -9,6 +9,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added automatic copyright value (`git config user.name`) when creating a block
 - Added dependency on builtin Git extension for calling `git` properly
 - Added "Don't Show Again" option to XML check notifications 
+- Added icons in the language selection when creating blocks 
+
+### Changed
+- Raised VSCode engine dependency to ^1.81.0 for icons in QuickPickItems 
 
 ## [0.2.0] - 2023-12-03
 ### Added

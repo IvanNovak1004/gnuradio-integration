@@ -227,7 +227,7 @@ export class GNURadioController {
     public async createBlock() {
         try {
             const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
-            const state = await modtool.createBlock(existingBlocks);
+            const state = await modtool.createBlock(this.context, existingBlocks);
             if (!state) {
                 return;
             }

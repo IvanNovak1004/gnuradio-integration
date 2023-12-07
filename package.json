@@ -2,11 +2,11 @@
     "name": "gnuradio-integration",
     "displayName": "GNURadio Integration",
     "description": "GNURadio Integration",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "license": "MIT",
     "publisher": "AsriFox",
     "engines": {
-        "vscode": "^1.68.0"
+        "vscode": "^1.81.0"
     },
     "repository": {
         "type": "git",
@@ -189,7 +189,7 @@
         "@types/glob": "^7.2.0",
         "@types/mocha": "^9.1.1",
         "@types/node": "16.x",
-        "@types/vscode": "^1.68.0",
+        "@types/vscode": "^1.81.0",
         "@typescript-eslint/eslint-plugin": "^5.27.0",
         "@typescript-eslint/parser": "^5.27.0",
         "@vscode/test-electron": "^2.1.3",

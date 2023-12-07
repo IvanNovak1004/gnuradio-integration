@@ -1,6 +1,10 @@
 'use strict';
 
-import { window, InputBoxValidationSeverity, QuickPickItem, workspace } from 'vscode';
+import {
+    window, workspace,
+    Uri, ExtensionContext,
+    InputBoxValidationSeverity, QuickPickItem
+} from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
 import { MultiStepInput } from './multiStepInput';
@@ -51,7 +55,7 @@ export async function createModule() {
     return { newmodName, parentDir };
 }
 
-export async function createBlock(existingBlocks: Set<string>) {
+export async function createBlock(context: ExtensionContext, existingBlocks: Set<string>) {
     async function validateName(value: string) {
         let name = value.trim();
         if (!name.length) {
@@ -140,14 +144,23 @@ export async function createBlock(existingBlocks: Set<string>) {
     }
 
     async function pickLanguage(input: MultiStepInput, state: State) {
+        const baseUri = context.extensionUri;
         const pick = await input.showQuickPick({
             title: state.title,
             step: 4,
             totalSteps: state.totalSteps,
             placeholder: 'Pick implementation language',
             items: [
-                { label: 'Python', description: 'python', iconClass: ['file-icon', 'python-lang-file-icon'] },
-                { label: 'C++', description: 'cpp', iconClass: 'cpp-lang-file-icon' },
+                {
+                    label: 'Python',
+                    description: 'python',
+                    iconPath: Uri.joinPath(baseUri, 'media', 'file_type_python.svg')
+                },
+                {
+                    label: 'C++',
+                    description: 'cpp',
+                    iconPath: Uri.joinPath(baseUri, 'media', 'file_type_cpp3.svg')
+                },
             ],
             activeItem: state.language,
             shouldResume: async () => false,
