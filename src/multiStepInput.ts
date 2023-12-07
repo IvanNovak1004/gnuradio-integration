@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons } from 'vscode';
+import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons, InputBoxValidationMessage, InputBoxOptions, QuickPickOptions } from 'vscode';
 
 // -------------------------------------------------------
 // Helper code that wraps the API for the multi-step case.
@@ -17,32 +17,6 @@ class InputFlowAction {
 }
 
 type InputStep = (input: MultiStepInput) => Thenable<InputStep | void>;
-
-interface QuickPickParameters<T extends QuickPickItem> {
-	title: string;
-	step: number;
-	totalSteps: number;
-	items: T[];
-	activeItem?: T;
-	ignoreFocusOut?: boolean;
-	canSelectMany?: boolean;
-	placeholder: string;
-	buttons?: QuickInputButton[];
-	shouldResume?: () => Thenable<boolean>;
-}
-
-interface InputBoxParameters {
-	title: string;
-	step: number;
-	totalSteps: number;
-	value: string;
-	prompt: string;
-	validate: (value: string) => Promise<string | undefined>;
-	buttons?: QuickInputButton[];
-	ignoreFocusOut?: boolean;
-	placeholder?: string;
-	shouldResume?: () => Thenable<boolean>;
-}
 
 export class MultiStepInput {
 
@@ -82,20 +56,20 @@ export class MultiStepInput {
 		}
 	}
 
-	async showQuickPick<T extends QuickPickItem, P extends QuickPickParameters<T>>({ title, step, totalSteps, items, activeItem, ignoreFocusOut, canSelectMany, placeholder, shouldResume }: P) {
+	async showQuickPick<T extends QuickPickItem>(items: T[], options: QuickPickOptions & { step: number, totalSteps: number, activeItem?: T, buttons?: QuickInputButton[], shouldResume?: () => Thenable<boolean> }) {
 		const disposables: Disposable[] = [];
 		try {
 			return await new Promise<T[]>((resolve, reject) => {
 				const input = window.createQuickPick<T>();
-				input.title = title;
-				input.step = step;
-				input.totalSteps = totalSteps;
-				input.ignoreFocusOut = ignoreFocusOut ?? false;
-				input.canSelectMany = canSelectMany ?? false;
-				input.placeholder = placeholder;
+				input.title = options.title;
+				input.step = options.step;
+				input.totalSteps = options.totalSteps;
+				input.ignoreFocusOut = options.ignoreFocusOut ?? false;
+				input.canSelectMany = options.canPickMany ?? false;
+				input.placeholder = options.placeHolder;
 				input.items = items;
-				if (activeItem) {
-					input.activeItems = [activeItem];
+				if (options.activeItem) {
+					input.activeItems = [options.activeItem];
 				}
 				input.buttons = this.steps.length > 1 ? [QuickInputButtons.Back] : [];
 				disposables.push(
@@ -109,7 +83,7 @@ export class MultiStepInput {
 					input.onDidChangeSelection(items => resolve([...items])),
 					input.onDidHide(() => {
 						(async () => {
-							reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+							reject(options.shouldResume && await options.shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
 						})()
 							.catch(reject);
 					})
@@ -125,23 +99,23 @@ export class MultiStepInput {
 		}
 	}
 
-	async showInputBox<P extends InputBoxParameters>({ title, step, totalSteps, value, prompt, validate, buttons, ignoreFocusOut, placeholder, shouldResume }: P) {
+	async showInputBox(options: InputBoxOptions & { step: number, totalSteps: number, buttons?: QuickInputButton[], shouldResume?: () => Thenable<boolean> }) {
 		const disposables: Disposable[] = [];
 		try {
-			return await new Promise<string | (P extends { buttons: (infer I)[] } ? I : never)>((resolve, reject) => {
+			return await new Promise<string>((resolve, reject) => {
 				const input = window.createInputBox();
-				input.title = title;
-				input.step = step;
-				input.totalSteps = totalSteps;
-				input.value = value || '';
-				input.prompt = prompt;
-				input.ignoreFocusOut = ignoreFocusOut ?? false;
-				input.placeholder = placeholder;
+				input.title = options.title;
+				input.step = options.step;
+				input.totalSteps = options.totalSteps;
+				input.value = options.value || '';
+				input.prompt = options.prompt;
+				input.ignoreFocusOut = options.ignoreFocusOut ?? false;
+				input.placeholder = options.placeHolder;
 				input.buttons = [
 					...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
-					...(buttons || [])
+					...(options.buttons || [])
 				];
-				let validating = validate('');
+				let validating = options.validateInput ? options.validateInput('') : undefined;
 				disposables.push(
 					input.onDidTriggerButton(item => {
 						if (item === QuickInputButtons.Back) {
@@ -154,23 +128,26 @@ export class MultiStepInput {
 						const value = input.value;
 						input.enabled = false;
 						input.busy = true;
-						if (!(await validate(value))) {
+						if (!options.validateInput || !(await options.validateInput(value))) {
 							resolve(value);
 						}
 						input.enabled = true;
 						input.busy = false;
 					}),
 					input.onDidChangeValue(async text => {
-						const current = validate(text);
+						if (!options.validateInput) {
+							return;
+						}
+						const current = options.validateInput(text);
 						validating = current;
 						const validationMessage = await current;
 						if (current === validating) {
-							input.validationMessage = validationMessage;
+							input.validationMessage = validationMessage ?? undefined;
 						}
 					}),
 					input.onDidHide(() => {
 						(async () => {
-							reject(shouldResume && await shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
+							reject(options.shouldResume && await options.shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
 						})()
 							.catch(reject);
 					})

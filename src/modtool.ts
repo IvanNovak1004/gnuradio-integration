@@ -56,27 +56,6 @@ export async function createModule() {
 }
 
 export async function createBlock(context: ExtensionContext, existingBlocks: Set<string>) {
-    async function validateName(value: string) {
-        let name = value.trim();
-        if (!name.length) {
-            return 'Name cannot be empty';
-        }
-        if (!/^([\w,\_]+)$/.test(name)) {
-            return 'Name can only contain ASCII letters, digits and underscores';
-        }
-        // if (name.length < 3) {
-        //     return {
-        //         message: 'Descriptive names usually contain at least 3 symbols',
-        //         severity: vscode.InputBoxValidationSeverity.Warning,
-        //         then: null,
-        //     };
-        // }
-        if (existingBlocks.has(name)) {
-            return 'Block with that name is already present';
-        }
-        return undefined;
-    }
-
     interface State {
         title: string;
         step: number;
@@ -98,8 +77,6 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             totalSteps: state.totalSteps,
             value: state.copyright || '',
             prompt: 'Please specify the copyright holder',
-            validate: async () => undefined,
-            shouldResume: async () => false,
         });
         return (input: MultiStepInput) => inputName(input, state);
     }
@@ -112,19 +89,41 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             totalSteps: state.totalSteps,
             value: state.name || '',
             prompt: 'Choose a unique name for the block',
-            validate: validateName,
-            shouldResume: async () => false,
+            validateInput(value) {
+                let name = value.trim();
+                if (!name.length) {
+                    return {
+                        message: 'Name cannot be empty',
+                        severity: InputBoxValidationSeverity.Error,
+                    };
+                }
+                if (!/^([\w,\_]+)$/.test(name)) {
+                    return {
+                        message: 'Name can only contain ASCII letters, digits and underscores',
+                        severity: InputBoxValidationSeverity.Error,
+                    };
+                }
+                if (name.length < 3) {
+                    return {
+                        message: 'Descriptive names usually contain at least 3 symbols',
+                        severity: InputBoxValidationSeverity.Warning,
+                        then: null,
+                    };
+                }
+                if (existingBlocks.has(name)) {
+                    return {
+                        message: 'Block with that name is already present',
+                        severity: InputBoxValidationSeverity.Error,
+                    };
+                }
+            },
         });
         return (input: MultiStepInput) => pickBlockType(input, state);
     }
 
     async function pickBlockType(input: MultiStepInput, state: State) {
-        const pick = await input.showQuickPick({
-            title: state.title,
-            step: 3,
-            totalSteps: state.totalSteps,
-            placeholder: 'Pick block type',
-            items: [
+        const pick = await input.showQuickPick(
+            [
                 { label: 'general', description: 'gr::block', detail: 'General-purpose block type' },
                 { label: 'sync', description: 'gr::sync_block', detail: 'Block with synchronous 1:1 input-to-output' },
                 { label: 'decimator', description: 'gr::sync_decimator', detail: 'Block with synchronous N:1 input-to-output' },
@@ -135,9 +134,14 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
                 { label: 'hier', description: 'gr::hier_block2', detail: 'Hierarchical container block for other blocks; usually can be described by a flowgraph' },
                 { label: 'noblock', detail: 'C++ or Python class' },
             ],
-            activeItem: state.blockType,
-            shouldResume: async () => false,
-        });
+            {
+                title: state.title,
+                step: 3,
+                totalSteps: state.totalSteps,
+                placeHolder: 'Pick block type',
+                activeItem: state.blockType,
+            }
+        );
         state.blockType = pick[0];
         // state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
         return (input: MultiStepInput) => pickLanguage(input, state);
@@ -145,12 +149,8 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
 
     async function pickLanguage(input: MultiStepInput, state: State) {
         const baseUri = context.extensionUri;
-        const pick = await input.showQuickPick({
-            title: state.title,
-            step: 4,
-            totalSteps: state.totalSteps,
-            placeholder: 'Pick implementation language',
-            items: [
+        const pick = await input.showQuickPick(
+            [
                 {
                     label: 'Python',
                     description: 'python',
@@ -162,9 +162,14 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
                     iconPath: Uri.joinPath(baseUri, 'media', 'file_type_cpp3.svg')
                 },
             ],
-            activeItem: state.language,
-            shouldResume: async () => false,
-        });
+            {
+                title: state.title,
+                step: 4,
+                totalSteps: state.totalSteps,
+                placeHolder: 'Pick implementation language',
+                activeItem: state.language,
+            }
+        );
         state.language = pick[0];
         // if (state.blockType?.label === 'noblock' && state.language.label.includes('Python')) {
         state.finished = true;

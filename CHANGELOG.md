@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.2.1] - 2023-12-07
 ### Added
 - Added automatic copyright value (`git config user.name`) when creating a block
 - Added dependency on builtin Git extension for calling `git` properly
@@ -48,7 +50,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.1...v0.1.2
