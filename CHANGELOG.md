@@ -5,6 +5,9 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Added automatic copyright value (`git config user.name`) when creating a block
+- Added dependency on builtin Git extension for calling `git` properly
 
 ## [0.2.0] - 2023-12-03
 ### Added

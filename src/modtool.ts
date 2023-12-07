@@ -1,9 +1,10 @@
 'use strict';
 
-import { window, InputBoxValidationSeverity, QuickPickItem } from 'vscode';
+import { window, InputBoxValidationSeverity, QuickPickItem, workspace } from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
 import { MultiStepInput } from './multiStepInput';
+import { execSync } from 'child_process';
 
 export async function createModule() {
     const newmodName = await window.showInputBox({
@@ -191,6 +192,17 @@ export async function createBlock(existingBlocks: Set<string>) {
     // TODO: Arguments?
 
     let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 4, finished: false };
+    try {
+        const gitPath = workspace.getConfiguration('git').get<string | string[]>('path');
+        const gitCmd = gitPath
+            ? Array.isArray(gitPath)
+                ? gitPath.length > 0 ? gitPath[0] : undefined
+                : gitPath
+            : undefined;
+        state.copyright = execSync(`${gitCmd ?? 'git'} config user.name`, { encoding: 'utf8' });
+    }
+    catch (_) { }
+
     await MultiStepInput.run(input => inputAuthor(input, state));
     return state.finished ? state : undefined;
 }
