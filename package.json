@@ -50,6 +50,11 @@
                 "category": "GNURadio Compiler"
             },
             {
+                "command": "gnuradio-integration.getModuleInfo",
+                "title": "Query Info",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.createModule",
                 "title": "Create OOT Module",
                 "category": "GNURadio Module"

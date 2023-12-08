@@ -239,7 +239,7 @@ export class GNURadioController {
             return JSON.parse(moduleInfoStr.join('\n').trim().replace(/\'/g, '"'));
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }

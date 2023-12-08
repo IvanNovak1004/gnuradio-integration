@@ -7,6 +7,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added custom modtool wrapper scripts and `python-shell` dependency
+- Added a command to manually query module info (`gr_modtool info`): 
+a workaround to activate the extension when the module has no blocks yet
 
 ### Changed
 - Replaced `child_process` with `python-shell` for modtool commands
