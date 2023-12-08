@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { ExecOptions, exec as cp_exec } from 'child_process';
 import { dirname, extname, basename, resolve } from 'path';
 import { existsSync } from 'fs';
+import { PythonShell, Options } from 'python-shell';
 import * as modtool from './modtool';
 const exec = promisify(cp_exec);
 
@@ -27,12 +28,12 @@ export class GNURadioController {
     public async setCwd(cwd?: string) {
         this.cwd = cwd;
         this.moduleName = undefined;
-            let moduleFound = false;
+        let moduleFound = false;
         const info = await this.getModuleInfo();
-            if (info) {
-                moduleFound = true;
-                this.moduleName = info['modname'];
-                // TODO: base_dir !== this.cwd
+        if (info) {
+            moduleFound = true;
+            this.moduleName = info['modname'];
+            // TODO: base_dir !== this.cwd
             if (vscode.workspace.getConfiguration(this.extId).get('modtool.checkXml') === true) {
                 this.checkXml();
             }
@@ -57,7 +58,7 @@ export class GNURadioController {
             const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
             let updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
             if (updateAll === 'Yes') {
-                await this.exec(`${this.modtool()} update --complete`);
+                this.execModtool('update', '--complete');
                 vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
                 updateAll = await vscode.window.showInformationMessage('Block definitions written to "grc/".', dontShowAgain);
             }
@@ -68,15 +69,13 @@ export class GNURadioController {
     }
 
     private grc() {
-        return vscode.workspace.getConfiguration(this.extId).get('companion.cmd');
+        return vscode.workspace.getConfiguration(this.extId)
+            .get<string>('companion.cmd') ?? 'gnuradio-companion';
     }
 
     private grcc() {
-        return vscode.workspace.getConfiguration(this.extId).get('compiler.cmd');
-    }
-
-    private modtool() {
-        return vscode.workspace.getConfiguration(this.extId).get('modtool.cmd');
+        return vscode.workspace.getConfiguration(this.extId)
+            .get<string>('compiler.cmd') ?? 'grcc';
     }
 
     private print(value: string) {
@@ -138,6 +137,21 @@ export class GNURadioController {
         return this.exec(`${cmd} "${path}"`, options);
     }
 
+    private async execModtool(command: 'add' | 'bind' | 'disable' | 'info' | 'makeyaml' | 'rename' | 'rm' | 'update', ...args: string[]): Promise<string[]> {
+        this.print(`[Running] gr_modtool ${command} ${args.join(' ')}`);
+        const output: string[] = await PythonShell.run(`${command}.py`, {
+            scriptPath: resolve(this.context.extensionPath, 'src', 'modtool'),
+            mode: 'text', encoding: 'utf8',
+            stderrParser: data => this.print(data),
+            cwd: this.cwd, args,
+        });
+        for (const line of output) {
+            this.print(line);
+        }
+        this.print('');
+        return output;
+    }
+
     /** 
      * Open GNURadio Companion application.
      * 
@@ -189,11 +203,24 @@ export class GNURadioController {
             if (existsSync(newmodPath)) {
                 throw Error('Directory already exists');
             }
-            await this.exec(`"${this.modtool()}" newmod ${newmodName}`, { cwd: parentDir });
-            return vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+            this.print(`[Running] gr_modtool newmod ${newmodName}`);
+            const output: string[] = await PythonShell.run('newmod.py', {
+                scriptPath: resolve(this.context.extensionPath, 'src', 'modtool'),
+                mode: 'text', encoding: 'utf8',
+                stderrParser: data => this.print(data),
+                cwd: parentDir,
+                args: [newmodName],
+            });
+            for (const line of output) {
+                this.print(line);
+            }
+            this.print('');
+            if (await vscode.window.showInformationMessage(`New GNURadio module "${newmodName}" created in ${newmodPath}.`, 'Open Directory') === 'Open Directory') {
+                vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
+            }
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -208,8 +235,8 @@ export class GNURadioController {
             if (!this.cwd) {
                 throw Error("No module detected in the open workspace");
             }
-            let { stdout: moduleInfoStr, stderr: _ } = await this.exec(`"${this.modtool()}" info --python-readable`);
-            return JSON.parse(moduleInfoStr.slice(0, -1).replace(/\'/g, '"'));
+            const moduleInfoStr = await this.execModtool('info');
+            return JSON.parse(moduleInfoStr.join('\n').trim().replace(/\'/g, '"'));
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
@@ -231,15 +258,30 @@ export class GNURadioController {
             if (!state) {
                 return;
             }
-            await this.exec(`"${this.modtool()}" add ${state.name} --copyright ${state.copyright ?? ''} --block-type ${state.blockType!.label} --lang ${state.language!.description} --add-cpp-qa --add-python-qa --argument-list ""`);
-            // ${state.addCppTest ?? ''} ${state.addPythonTest ?? ''}
+            let args = [
+                state.name!,
+                '--block-type',
+                state.blockType!.label,
+                '--lang',
+                state.language!.description!,
+            ];
+            if (state.copyright) {
+                args.push('--copyright', state.copyright);
+            }
+            if (state.addCppTest) {
+                args.push('--add-cpp-qa');
+            }
+            if (state.addPythonTest) {
+                args.push('--add-python-qa');
+            }
+            this.execModtool('add', ...args);
             const blockPath = state.language!.description === 'python'
                 ? resolve(this.cwd!, 'python', this.moduleName!, `${state.name}.py`)
                 : resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!, `${state.name}.h`);
-            return vscode.commands.executeCommand('vscode.open', vscode.Uri.file(blockPath));
+            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(blockPath));
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -267,11 +309,11 @@ export class GNURadioController {
             if (!blockName) {
                 throw Error('No block name provided');
             }
-            await this.exec(`"${this.modtool()}" bind ${blockName}`);
-            return vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
+            this.execModtool('bind', blockName);
+            vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -299,12 +341,12 @@ export class GNURadioController {
             // TODO: show files to be disabled?
             const confirm = await vscode.window.showWarningMessage(`Are you sure you want to disable "${blockName}"?`, { modal: true }, "Yes");
             if (confirm === 'Yes') {
-                await this.exec(`"${this.modtool()}" disable ${blockName}`);
-                return vscode.window.showInformationMessage(`Block "${blockName}" was disabled`);
+                this.execModtool('disable', blockName);
+                vscode.window.showInformationMessage(`Block "${blockName}" was disabled`);
             }
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -330,12 +372,12 @@ export class GNURadioController {
             // TODO: show files to be removed?
             const confirm = await vscode.window.showWarningMessage(`Are you sure you want to remove "${blockName}"?`, { modal: true }, "Yes");
             if (confirm === 'Yes') {
-                await this.exec(`"${this.modtool()}" rm ${blockName} -y`);
-                return vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
+                this.execModtool('rm', blockName);
+                vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
             }
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -388,11 +430,11 @@ export class GNURadioController {
                 throw Error('No valid name provided');
             }
             // TODO: show files to be renamed?
-            await this.exec(`"${this.modtool()}" rename ${blockName} ${newBlockName}`);
-            return vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
+            this.execModtool('rename', blockName);
+            vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -423,16 +465,16 @@ export class GNURadioController {
             if (!blockName) {
                 const updateAll = await vscode.window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
                 if (updateAll === 'Yes') {
-                    await this.exec(`${this.modtool()} update --complete`);
-                    return vscode.window.showInformationMessage(`Block definitions written to "grc/"`);
+                    this.execModtool('update', '--complete');
+                    vscode.window.showInformationMessage(`Block definitions written to "grc/"`);
                 }
                 return;
             }
-            await this.exec(`"${this.modtool()}" update ${blockName}`);
-            return vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
+            this.execModtool('update', blockName);
+            vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }
@@ -465,11 +507,11 @@ export class GNURadioController {
             if (!blockName) {
                 throw Error('No block name provided');
             }
-            await this.exec(`"${this.modtool()}" makeyaml ${blockName}`);
-            return vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
+            this.execModtool('makeyaml', blockName);
+            vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
         } catch (err) {
             if (err instanceof Error) {
-                return vscode.window.showErrorMessage(err.message);
+                vscode.window.showErrorMessage(err.message);
             }
         }
     }

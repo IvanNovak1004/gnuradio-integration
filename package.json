@@ -99,7 +99,7 @@
                 },
                 {
                     "command": "gnuradio-integration.createPythonBindings",
-                    "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\\/]gnuradio[\\\\\\\/]/ && resourceFilename != api.h",
+                    "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\/]gnuradio[\\\\\\/]/ && resourceFilename != api.h",
                     "group": "gnuradio-integration"
                 },
                 {
@@ -198,6 +198,9 @@
         "glob": "^8.0.3",
         "mocha": "^10.0.0",
         "typescript": "^4.7.2"
+    },
+    "dependencies": {
+        "python-shell": "^5.0.0"
     },
     "extensionDependencies": [
         "vscode.git"
