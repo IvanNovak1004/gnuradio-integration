@@ -3,7 +3,7 @@
 import {
     window, workspace,
     Uri, ExtensionContext,
-    InputBoxValidationSeverity, QuickPickItem
+    InputBoxValidationSeverity, QuickPickItem, TreeItem
 } from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
@@ -268,4 +268,50 @@ export function getCppBlockImpl(cwd: string) {
     return readdirSync(resolve(cwd, 'lib'))
         .filter(filterCppBlockImpl)
         .map(mapCppBlockImpl);
+}
+
+export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName: string) {
+    const readdir = (...pathSegments: string[]) =>
+        workspace.fs.readDirectory(Uri.joinPath(baseUri, ...pathSegments));
+    const grcFiles = (await readdir('grc'))
+        .filter((value) =>
+            value[0].startsWith(`${moduleName}_${block}`) &&
+            (filterGrcBlocks()(value[0]) || filterGrcBlocks('.xml')(value[0])))
+        .map((value) => {
+            let item = new TreeItem(Uri.joinPath(baseUri, 'grc', value[0]));
+            item.description = item.label?.toString();
+            item.label = 'Block definition';
+            return item;
+        });
+    const cppFiles = (await readdir('include', 'gnuradio', moduleName))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            filterCppBlocks(value[0]))
+        .map((value) => {
+            let item = new TreeItem(Uri.joinPath(baseUri, 'include', 'gnuradio', moduleName, value[0]));
+            item.description = item.label?.toString();
+            item.label = 'Public header';
+            return item;
+        });
+    const pyFiles = (await readdir('python', moduleName))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            filterPyBlocks(value[0]))
+        .map((value) => {
+            let item = new TreeItem(Uri.joinPath(baseUri, 'python', moduleName, value[0]));
+            item.description = item.label?.toString();
+            item.label = 'Implementation';
+            return item;
+        });
+    const cppImplFiles = (await readdir('lib'))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            (filterCppBlockImpl(value[0]) || extname(value[0]) === '.h'))
+        .map((value) => {
+            let item = new TreeItem(Uri.joinPath(baseUri, 'lib', value[0]));
+            item.description = item.label?.toString();
+            item.label = value[0].endsWith('.h') ? 'Implementation header' : 'Implementation source';
+            return item;
+        });
+    return [...grcFiles, ...pyFiles, ...cppFiles, ...cppImplFiles];
 }

@@ -175,7 +175,15 @@
                     ".grc"
                 ]
             }
-        ]
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "gnuradioModule",
+                    "name": "GNURadio Module"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

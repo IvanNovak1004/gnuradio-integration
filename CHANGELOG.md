@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Added GNURadio Module view to the Explorer panel
 
 ## [0.2.1] - 2023-12-07
 ### Added

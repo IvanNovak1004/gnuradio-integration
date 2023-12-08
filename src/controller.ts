@@ -8,7 +8,7 @@ import { existsSync } from 'fs';
 import * as modtool from './modtool';
 const exec = promisify(cp_exec);
 
-export class GNURadioController {
+export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeItem> {
     private context: vscode.ExtensionContext;
     private _outputChannel: vscode.OutputChannel;
     private cwd?: string;
@@ -27,12 +27,12 @@ export class GNURadioController {
     public async setCwd(cwd?: string) {
         this.cwd = cwd;
         this.moduleName = undefined;
-            let moduleFound = false;
+        let moduleFound = false;
         const info = await this.getModuleInfo();
-            if (info) {
-                moduleFound = true;
-                this.moduleName = info['modname'];
-                // TODO: base_dir !== this.cwd
+        if (info) {
+            moduleFound = true;
+            this.moduleName = info['modname'];
+            // TODO: base_dir !== this.cwd
             if (vscode.workspace.getConfiguration(this.extId).get('modtool.checkXml') === true) {
                 this.checkXml();
             }
@@ -471,6 +471,37 @@ export class GNURadioController {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
             }
+        }
+    }
+
+    public async getTreeItem(element: vscode.TreeItem) {
+        return element;
+    }
+
+    public async getChildren(element?: vscode.TreeItem) {
+        if (!this.cwd) {
+            return [];
+        }
+        if (!this.moduleName) {
+            await this.setCwd(this.cwd);
+        }
+        if (!this.moduleName) {
+            vscode.window.showInformationMessage('No GNURadio Module detected in the workspace');
+            return [];
+        }
+        if (element) {
+            if (!element.label) {
+                element.collapsibleState = vscode.TreeItemCollapsibleState.None;
+                return [];
+            }
+            const baseUri = vscode.Uri.file(this.cwd);
+            return await modtool.getBlockFilesTree(element.label.toString(), baseUri, this.moduleName);
+        } else {
+            return Array.from(modtool.getAllBlocks(this.cwd, this.moduleName))
+                .map((name) => {
+                    let item = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.Collapsed);
+                    return item;
+                });
         }
     }
 }

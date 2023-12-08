@@ -79,6 +79,8 @@ export function activate(context: vscode.ExtensionContext) {
             ctl.makeYamlFromImpl,
             ctl),
     );
+
+    vscode.window.registerTreeDataProvider('gnuradioModule', ctl);
 }
 
 export function deactivate() { }
