@@ -504,4 +504,11 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 });
         }
     }
+
+    private _onDidChangeTreeData = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    public refresh() {
+        this._onDidChangeTreeData.fire();
+    }
 }

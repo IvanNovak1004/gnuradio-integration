@@ -78,6 +78,12 @@
                 "command": "gnuradio-integration.convertXmlToYaml",
                 "title": "Convert XML to YAML",
                 "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.refreshView",
+                "title": "Refresh View",
+                "category": "GNURadio Module",
+                "icon": "$(refresh)"
             }
         ],
         "menus": {
@@ -140,6 +146,13 @@
                 {
                     "command": "gnuradio-integration.convertXmlToYaml",
                     "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "gnuradio-integration.refreshView",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation"
                 }
             ]
         },

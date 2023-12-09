@@ -81,6 +81,13 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     vscode.window.registerTreeDataProvider('gnuradioModule', ctl);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            `${ctl.extId}.refreshView`,
+            ctl.refresh,
+            ctl),
+    );
 }
 
 export function deactivate() { }

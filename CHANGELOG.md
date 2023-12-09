@@ -7,6 +7,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added GNURadio Module view to the Explorer panel
+- Added an action to refresh the module view
+- Added opening the file on click in the module view
 
 ### Fixed
 - Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)
