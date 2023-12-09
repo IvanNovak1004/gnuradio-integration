@@ -8,6 +8,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Added GNURadio Module view to the Explorer panel
 
+### Fixed
+- Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)
+- Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
+
 ## [0.2.1] - 2023-12-07
 ### Added
 - Added automatic copyright value (`git config user.name`) when creating a block
