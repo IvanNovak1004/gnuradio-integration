@@ -249,23 +249,28 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      * 
      * This command runs `gr_modtool bind %f` in the shell, generating pybind11 code based on the block's C++ header.
      */
-    public async createPythonBindings(fileUri?: vscode.Uri) {
+    public async createPythonBindings(block?: vscode.Uri | vscode.TreeItem) {
         try {
             let blockName: string | undefined;
-            if (!fileUri) {
+            if (block instanceof vscode.TreeItem) {
+                blockName = typeof block.label === 'object'
+                    ? block.label.label
+                    : block.label;
+            } else if (block instanceof vscode.Uri) {
+                if (!modtool.filterCppBlocks(block.fsPath)) {
+                    throw Error(`Invalid file type: expected a header (.h), found ${basename(block.fsPath)}`);
+                }
+                blockName = modtool.mapCppBlocks(block.fsPath);
+            } else {
                 const headers = modtool.getCppBlocks(this.cwd!, this.moduleName!);
                 blockName = await vscode.window.showQuickPick(headers, {
                     title: 'GNURadio: Python Bindings',
                     placeHolder: 'Enter block name...',  // TODO: Regular expression (python-bridge?)
                     canPickMany: false,
                 });
-            } else if (!modtool.filterCppBlocks(fileUri.fsPath)) {
-                throw Error(`Invalid file type: expected a header (.h), found ${basename(fileUri.fsPath)}`);
-            } else {
-                blockName = modtool.mapCppBlocks(fileUri.fsPath);
-            }
-            if (!blockName) {
-                throw Error('No block name provided');
+                if (!blockName) {
+                    return;
+                }
             }
             await this.exec(`"${this.modtool()}" bind ${blockName}`);
             return vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
@@ -283,8 +288,9 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      * 
      * TODO: `gr_modtool disable` does not work correctly.
      */
-    public async disableBlock(blockName?: string) {
+    public async disableBlock(block?: vscode.TreeItem) {
         try {
+            let blockName = block?.label;
             if (!blockName) {
                 const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = await vscode.window.showQuickPick(blocks, {
@@ -292,12 +298,16 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
+                if (!blockName) {
+                    return;
+                }
+            } else if (typeof blockName === 'object') {
+                blockName = blockName.label;
             }
-            if (!blockName) {
-                throw Error('No block name provided');
-            }
-            // TODO: show files to be disabled?
-            const confirm = await vscode.window.showWarningMessage(`Are you sure you want to disable "${blockName}"?`, { modal: true }, "Yes");
+            const confirm = await vscode.window.showWarningMessage(
+                `Are you sure you want to disable "${blockName}"?`,
+                { modal: true },
+                'Yes');
             if (confirm === 'Yes') {
                 await this.exec(`"${this.modtool()}" disable ${blockName}`);
                 return vscode.window.showInformationMessage(`Block "${blockName}" was disabled`);
@@ -314,8 +324,9 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      * 
      * This command runs `gr_modtool rm %f`, removing all related files and changing CMakeLists.
      */
-    public async removeBlock(blockName?: string) {
+    public async removeBlock(block?: vscode.TreeItem) {
         try {
+            let blockName = block?.label;
             if (!blockName) {
                 const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = await vscode.window.showQuickPick(blocks, {
@@ -323,12 +334,20 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
+                if (!blockName) {
+                    return;
+                }
+            } else if (typeof blockName === 'object') {
+                blockName = blockName.label;
             }
-            if (!blockName) {
-                throw Error('No block name provided');
-            }
-            // TODO: show files to be removed?
-            const confirm = await vscode.window.showWarningMessage(`Are you sure you want to remove "${blockName}"?`, { modal: true }, "Yes");
+            // TODO: handle regex separately
+            let blockFiles = (await modtool.getBlockFilesTree(blockName, vscode.Uri.file(this.cwd!), this.moduleName!))
+                .map(item => item.resourceUri!.fsPath.slice(this.cwd!.length + 1));
+            blockFiles.unshift('The following files will be deleted:');
+            const confirm = await vscode.window.showWarningMessage(
+                `Are you sure you want to remove "${blockName}"?`,
+                { detail: blockFiles.join('\n- '), modal: true },
+                'Yes');
             if (confirm === 'Yes') {
                 await this.exec(`"${this.modtool()}" rm ${blockName} -y`);
                 return vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
@@ -345,18 +364,21 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      * 
      * This command runs `gr_modtool rename %f`, renaming all related files and changing CMakeLists.
      */
-    public async renameBlock(blockName?: string) {
+    public async renameBlock(block?: vscode.TreeItem) {
         try {
+            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            let blockName = block?.label;
             if (!blockName) {
-                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
-                blockName = await vscode.window.showQuickPick(blocks, {
+                blockName = await vscode.window.showQuickPick(Array.from(existingBlocks), {
                     title: 'GNURadio: Rename Block',
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
-            }
-            if (!blockName) {
-                throw Error('No block name provided');
+                if (!blockName) {
+                    return;
+                }
+            } else if (typeof blockName === 'object') {
+                blockName = blockName.label;
             }
             const newBlockName = await vscode.window.showInputBox({
                 title: `GNURadio: Rename "${blockName}"`,
@@ -387,9 +409,17 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             if (!newBlockName) {
                 throw Error('No valid name provided');
             }
-            // TODO: show files to be renamed?
-            await this.exec(`"${this.modtool()}" rename ${blockName} ${newBlockName}`);
-            return vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
+            let blockFiles = (await modtool.getBlockFilesTree(blockName, vscode.Uri.file(this.cwd!), this.moduleName!))
+                .map(item => item.resourceUri!.fsPath.slice(this.cwd!.length + 1));
+            blockFiles.unshift('The following files will be renamed:');
+            const confirm = await vscode.window.showWarningMessage(
+                `Are you sure you want to rename "${blockName}" to "${newBlockName}"?`,
+                { detail: blockFiles.join('\n- '), modal: true },
+                'Yes');
+            if (confirm === 'Yes') {
+                await this.exec(`"${this.modtool()}" rename ${blockName} ${newBlockName}`);
+                return vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
+            }
         } catch (err) {
             if (err instanceof Error) {
                 return vscode.window.showErrorMessage(err.message);
@@ -500,6 +530,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             return Array.from(modtool.getAllBlocks(this.cwd, this.moduleName))
                 .map((name) => {
                     let item = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.Collapsed);
+                    item.contextValue = 'block';
                     return item;
                 });
         }

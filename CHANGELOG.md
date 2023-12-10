@@ -7,8 +7,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added GNURadio Module view to the Explorer panel
-- Added an action to refresh the module view
+- Added actions in the module view to refresh view and create blocks
 - Added opening the file on click in the module view
+- Added actions on a block in the module view (context menu):
+  - Create Python Bindings;
+  - Rename Block;
+  - Remove Block.
 
 ### Fixed
 - Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)

@@ -57,7 +57,8 @@
             {
                 "command": "gnuradio-integration.createBlock",
                 "title": "Create Block",
-                "category": "GNURadio Module"
+                "category": "GNURadio Module",
+                "icon": "$(add)"
             },
             {
                 "command": "gnuradio-integration.createPythonBindings",
@@ -153,6 +154,25 @@
                     "command": "gnuradio-integration.refreshView",
                     "when": "view == gnuradioModule",
                     "group": "navigation"
+                },
+                {
+                    "command": "gnuradio-integration.createBlock",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "gnuradio-integration.createPythonBindings",
+                    "when": "view == gnuradioModule && viewItem == block"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlock",
+                    "when": "view == gnuradioModule && viewItem == block"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlock",
+                    "when": "view == gnuradioModule && viewItem == block"
                 }
             ]
         },
