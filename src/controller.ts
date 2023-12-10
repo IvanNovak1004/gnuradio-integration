@@ -383,28 +383,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             const newBlockName = await vscode.window.showInputBox({
                 title: `GNURadio: Rename "${blockName}"`,
                 placeHolder: 'Enter new block name...',
-                validateInput(value) {
-                    let name = value.trim();
-                    if (!name.length) {
-                        return {
-                            message: 'Name cannot be empty',
-                            severity: vscode.InputBoxValidationSeverity.Error,
-                        };
-                    }
-                    if (!/^([\w,\_]+)$/.test(name)) {
-                        return {
-                            message: 'Name can only contain ASCII letters, digits and underscores',
-                            severity: vscode.InputBoxValidationSeverity.Error,
-                        };
-                    }
-                    if (name.length < 3) {
-                        return {
-                            message: 'Descriptive names usually contain at least 3 symbols',
-                            severity: vscode.InputBoxValidationSeverity.Warning,
-                            then: null,
-                        };
-                    }
-                },
+                validateInput: modtool.validateBlockName(existingBlocks),
             });
             if (!newBlockName) {
                 throw Error('No valid name provided');

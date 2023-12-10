@@ -17,6 +17,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)
 - Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
+- Fixed rename not checking for uniqueness of a new name
 
 ## [0.2.1] - 2023-12-07
 ### Added

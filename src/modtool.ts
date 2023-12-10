@@ -10,6 +10,37 @@ import { basename, extname, resolve } from 'path';
 import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
 
+export function validateBlockName(existingBlocks: Set<string>) {
+    return (value: string) => {
+        let name = value.trim();
+        if (!name.length) {
+            return {
+                message: 'Name cannot be empty',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+        if (!/^([\w,\_]+)$/.test(name)) {
+            return {
+                message: 'Name can only contain ASCII letters, digits and underscores',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+        if (name.length < 3) {
+            return {
+                message: 'Descriptive names usually contain at least 3 symbols',
+                severity: InputBoxValidationSeverity.Warning,
+                then: null,
+            };
+        }
+        if (existingBlocks.has(name)) {
+            return {
+                message: 'Block with that name is already present',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+    };
+}
+
 export async function createModule() {
     const newmodName = await window.showInputBox({
         title: 'GNURadio: New OOT Module',
@@ -89,34 +120,7 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             totalSteps: state.totalSteps,
             value: state.name || '',
             prompt: 'Choose a unique name for the block',
-            validateInput(value) {
-                let name = value.trim();
-                if (!name.length) {
-                    return {
-                        message: 'Name cannot be empty',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-                if (!/^([\w,\_]+)$/.test(name)) {
-                    return {
-                        message: 'Name can only contain ASCII letters, digits and underscores',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-                if (name.length < 3) {
-                    return {
-                        message: 'Descriptive names usually contain at least 3 symbols',
-                        severity: InputBoxValidationSeverity.Warning,
-                        then: null,
-                    };
-                }
-                if (existingBlocks.has(name)) {
-                    return {
-                        message: 'Block with that name is already present',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-            },
+            validateInput: validateBlockName(existingBlocks),
         });
         return (input: MultiStepInput) => pickBlockType(input, state);
     }
