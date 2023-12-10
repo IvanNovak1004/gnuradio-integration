@@ -42,12 +42,14 @@
             {
                 "command": "gnuradio-integration.compileFlowgraph",
                 "title": "Compile Flowgraph",
-                "category": "GNURadio Compiler"
+                "category": "GNURadio Compiler",
+                "icon": "$(wrench)"
             },
             {
                 "command": "gnuradio-integration.runFlowgraph",
                 "title": "Compile and Run Flowgraph",
-                "category": "GNURadio Compiler"
+                "category": "GNURadio Compiler",
+                "icon": "$(run)"
             },
             {
                 "command": "gnuradio-integration.getModuleInfo",
@@ -145,6 +147,16 @@
                 {
                     "command": "gnuradio-integration.convertXmlToYaml",
                     "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
+                }
+            ],
+            "editor/title/run": [
+                {
+                    "command": "gnuradio-integration.compileFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
                 }
             ]
         },

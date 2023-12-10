@@ -1,13 +1,10 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { promisify } from 'util';
-import { ExecOptions, exec as cp_exec } from 'child_process';
 import { dirname, extname, basename, resolve } from 'path';
 import { existsSync } from 'fs';
-import { PythonShell, Options } from 'python-shell';
+import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
-const exec = promisify(cp_exec);
 
 export class GNURadioController {
     private context: vscode.ExtensionContext;
@@ -82,59 +79,46 @@ export class GNURadioController {
         this._outputChannel.appendLine(value);
     }
 
-    private exec(cmd: string, options: ExecOptions & {
-        successMessage?: string | undefined,
-        stdoutPath?: string | undefined,
-    } = {}) {
-        if (!options.cwd) {
-            options.cwd = this.cwd;
-        }
-        //this._outputChannel.show(true);
-        this.print(`[Running] ${cmd}`);
-        const proc = exec(cmd, options);
-        proc.child.stdout?.on('data', (data) => this.print(`${data}`));
-        proc.child.stderr?.on('data', (data) => this.print(`${data}`));
-        if (options.successMessage) {
-            proc.child.on('close', () => {
-                this.print(`[Done] ${options.successMessage}`);
-                vscode.window.showInformationMessage(options.successMessage!);
-            });
-        }
-        proc.child.on('error', (err) => {
-            this.print(`[Error] ${proc.child.stderr?.toString()}`);
-            vscode.window.showErrorMessage(err.toString());
-        });
-        return proc;
+    private exec(cmd: string, cwd?: string) {
+        vscode.tasks.executeTask(new vscode.Task(
+            {
+                type: 'shell',
+                options: { cwd: cwd ?? this.cwd }
+            },
+            vscode.TaskScope.Workspace,
+            'gnuradio-companion: edit file',
+            'shell',
+            new vscode.ShellExecution(cmd)
+        ));
     }
 
-    private async execOnFile(cmd: string, fileUri?: vscode.Uri, options: ExecOptions & {
-        successMessage?: string | undefined,
-        stdoutPath?: string | undefined,
-        fileExtension?: string | undefined,
-    } = {}) {
-        if (fileUri === undefined) {
-            return vscode.window.showErrorMessage("File required");
+    private async execOnFile(cmd: string, fileUri?: vscode.Uri, fileExtension?: string | undefined) {
+        try {
+            if (fileUri === undefined) {
+                throw Error("File required");
+            }
+            let stat = await vscode.workspace.fs.stat(fileUri);
+            switch (stat.type) {
+                case vscode.FileType.File:
+                    break;
+                case vscode.FileType.Directory:
+                    throw Error("File required, but folder was provided");
+                case vscode.FileType.SymbolicLink:
+                    throw Error("File required, but symlink was provided");
+                default:
+                    throw Error("File required, but something else was provided");
+            }
+            let path = fileUri.fsPath;
+            if (fileExtension && extname(path) !== fileExtension) {
+                throw Error(`Expected file extension "${fileExtension}", but found "${extname(path)}"`);
+            }
+            this.exec(`${cmd} "${path}"`, dirname(path));
+            return true;
+        } catch (err) {
+            if (err instanceof Error) {
+                vscode.window.showErrorMessage(err.message);
+            }
         }
-        let stat = await vscode.workspace.fs.stat(fileUri);
-        switch (stat.type) {
-            case vscode.FileType.File:
-                break;
-            case vscode.FileType.Directory:
-                return vscode.window.showErrorMessage("File required, but folder was provided");
-            case vscode.FileType.SymbolicLink:
-                return vscode.window.showErrorMessage("File required, but symlink was provided");
-            default:
-                throw Error("File required, but something else was provided");
-        }
-        let path = fileUri.fsPath;
-        if (options.fileExtension && extname(path) !== options.fileExtension) {
-            // FIXME: Is this a sanity check?
-            return vscode.window.showErrorMessage(`Expected file extension "${options.fileExtension}", but found "${extname(path)}"`);
-        }
-        if (!options.cwd) {
-            options.cwd = dirname(path);
-        }
-        return this.exec(`${cmd} "${path}"`, options);
     }
 
     private async execModtool(command: 'add' | 'bind' | 'disable' | 'info' | 'makeyaml' | 'rename' | 'rm' | 'update', ...args: string[]): Promise<string[]> {
@@ -158,7 +142,7 @@ export class GNURadioController {
      * This command runs `gnuradio-companion` in the shell.
      */
     public async openGnuradioCompanion() {
-        return this.exec(`"${this.grc()}"`);
+        this.exec(`"${this.grc()}"`);
     }
 
     /** 
@@ -167,7 +151,7 @@ export class GNURadioController {
      * This command runs `gnuradio-companion %f` in the shell, opening the selected file `%f`.
      */
     public async editInGnuradioCompanion(fileUri?: vscode.Uri) {
-        return this.execOnFile(`"${this.grc()}"`, fileUri, { fileExtension: '.grc' });
+        await this.execOnFile(`"${this.grc()}"`, fileUri, '.grc');
     }
 
     /**
@@ -176,7 +160,10 @@ export class GNURadioController {
      * This command runs `grcc %f` in the shell, producing a Python executable in the same folder as the selected file `%f`.
      */
     public async compileFlowgraph(fileUri?: vscode.Uri) {
-        return this.execOnFile(`"${this.grcc()}"`, fileUri, { fileExtension: '.grc' });
+        if (await this.execOnFile(`"${this.grcc()}"`, fileUri, '.grc')) {
+            // TODO: C++ flowgraph?
+            vscode.window.showInformationMessage(`Compiled to "${fileUri?.fsPath.replace(/".grc$"/, ".py")}" successfully`);
+        }
     }
 
     /**
@@ -185,10 +172,7 @@ export class GNURadioController {
      * This command runs `grcc -r %f` in the shell, producing a Python executable in the same folder as the selected file `%f` and running it.
      */
     public async runFlowgraph(fileUri?: vscode.Uri) {
-        return this.execOnFile(`"${this.grcc()}" -r`, fileUri, {
-            successMessage: `Compiled to "${fileUri?.fsPath.replace(/".grc$"/, ".py")}" successfully`,
-            fileExtension: '.grc',
-        });
+        await this.execOnFile(`"${this.grcc()}" -r`, fileUri, '.grc');
     }
 
     /**

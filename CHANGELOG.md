@@ -9,9 +9,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added custom modtool wrapper scripts and `python-shell` dependency
 - Added a command to manually query module info (`gr_modtool info`): 
 a workaround to activate the extension when the module has no blocks yet
+- Added compile/run actions in the editor titlebar for GRC Flowgraph files
 
 ### Changed
 - Replaced `child_process` with `python-shell` for modtool commands
+- Replaced `child_process` with tasks for `gnuradio-companion` and `grcc`
 
 ## [0.2.1] - 2023-12-07
 ### Added
