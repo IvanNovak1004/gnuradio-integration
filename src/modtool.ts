@@ -275,13 +275,64 @@ export function getCppBlockImpl(cwd: string) {
         .map(mapCppBlockImpl);
 }
 
-export function quickPickWithRegex(items: string[], title?: string, placeholder?: string) {
+export function filteredMapBlockFile(blockName: string, moduleName: string) {
+    if (filterCppBlockImpl(blockName)) {
+        return mapCppBlockImpl(blockName);
+    } else if (blockName.endsWith('_impl.h')) {
+        return basename(blockName).slice(0, -7);
+    } else if (filterCppBlocks(blockName)) {
+        return mapCppBlocks(blockName);
+    } else if (filterPyBlocks(blockName)) {
+        return mapPyBlocks(blockName);
+    } else if (filterGrcBlocks(blockName)) {
+        return mapGrcBlocks(moduleName)(blockName);
+    } else {
+        return undefined;
+    }
+}
+
+export function quickPick(
+    items: string[], options: {
+        title?: string,
+        placeholder?: string,
+        value?: string,
+        onDidChangeValue?: (e: string) => any,
+        onDidAccept?: (e: void) => any,
+    } = {}) {
     return new Promise<string>((resolve) => {
         let blockPick = window.createQuickPick();
-        blockPick.title = title;
-        blockPick.placeholder = placeholder;
+        blockPick.title = options.title;
+        blockPick.placeholder = options.placeholder;
+        blockPick.items = items.map((label) => ({ label }));
+        blockPick.value = options.value ?? '';
+        if (options.onDidChangeValue) {
+            blockPick.onDidChangeValue(options.onDidChangeValue);
+        }
+        if (!options.onDidAccept) {
+            options.onDidAccept = () => {
+                resolve(blockPick.selectedItems[0].label);
+                blockPick.hide();
+            };
+        }
+        blockPick.onDidAccept(options.onDidAccept);
+        blockPick.onDidHide(() => blockPick.dispose());
+        blockPick.show();
+    });
+}
+
+export function quickPickWithRegex(
+    items: string[], options: {
+        title?: string,
+        placeholder?: string,
+        value?: string,
+    } = {}) {
+    return new Promise<string>((resolve) => {
+        let blockPick = window.createQuickPick();
+        blockPick.title = options.title;
+        blockPick.placeholder = options.placeholder;
         blockPick.canSelectMany = false;
         blockPick.items = items.map((label) => ({ label }));
+        blockPick.value = options.value ?? '';
         blockPick.onDidChangeValue(() => {
             if (!items.includes(blockPick.value)) {
                 let picks: QuickPickItem[] = items.map((label) => ({ label }));
@@ -299,7 +350,7 @@ export function quickPickWithRegex(items: string[], title?: string, placeholder?
             }
         });
         blockPick.onDidAccept(() => {
-            const selection = blockPick.activeItems[0];
+            const selection = blockPick.selectedItems[0];
             if (selection.description === 'Regular expression') {
                 // TODO: regex syntax
                 resolve(`.*${selection.label}.*`);

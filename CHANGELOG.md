@@ -11,6 +11,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 a workaround to activate the extension when the module has no blocks yet
 - Added actions to compile/run GRC Flowgraph files or edit them in GNURadio Companion from the editor titlebar
 - Added a filter (regex) when creating Python bindings, making YAML from implementation, disabling or removing blocks
+- Added automatic blockname for modtool commands when a corresponding editor is in focus
 
 ### Changed
 - Replaced `child_process` with `python-shell` for modtool commands

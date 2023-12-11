@@ -288,11 +288,19 @@ export class GNURadioController {
             let blockBindPath = join('python', this.moduleName!, 'bindings');
             if (!fileUri) {
                 const existingBlocks = modtool.getCppBlocks(this.cwd!, this.moduleName!);
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.mapCppBlocks(blockName);
+                    if (!existingBlocks.includes(blockName)) {
+                        blockName = undefined;
+                    }
+                }
                 blockName = await modtool.quickPickWithRegex(
-                    existingBlocks,
-                    'GNURadio: Python Bindings',
-                    'Enter block name or regular expression...',
-                );
+                    existingBlocks, {
+                    title: 'GNURadio: Python Bindings',
+                    placeholder: 'Enter block name or regular expression...',
+                    value: blockName,
+                });
                 if (existingBlocks.includes(blockName)) {
                     blockBindPath = join(blockBindPath, `${blockName}_python.cc`);
                 }
@@ -327,11 +335,16 @@ export class GNURadioController {
             let successMessage = 'Matching blocks were disabled';
             if (!blockName) {
                 const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                }
                 blockName = await modtool.quickPickWithRegex(
-                    Array.from(existingBlocks),
-                    'GNURadio: Disable Blocks',
-                    'Enter block name or regular expression...',
-                );
+                    Array.from(existingBlocks), {
+                    title: 'GNURadio: Disable Blocks',
+                    placeholder: 'Enter block name or regular expression...',
+                    value: blockName,
+                });
                 if (existingBlocks.has(blockName)) {
                     successMessage = `Block "${blockName}" was disabled`;
                 }
@@ -362,11 +375,16 @@ export class GNURadioController {
             let successMessage = 'Matching blocks were removed';
             if (!blockName) {
                 const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                }
                 blockName = await modtool.quickPickWithRegex(
-                    Array.from(existingBlocks),
-                    'GNURadio: Disable Blocks',
-                    'Enter block name or regular expression...',
-                );
+                    Array.from(existingBlocks), {
+                    title: 'GNURadio: Disable Blocks',
+                    placeholder: 'Enter block name or regular expression...',
+                    value: blockName,
+                });
                 if (existingBlocks.has(blockName)) {
                     successMessage = `Block "${blockName}" was removed`;
                 }
@@ -396,9 +414,15 @@ export class GNURadioController {
         try {
             if (!blockName) {
                 const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
-                blockName = await vscode.window.showQuickPick(blocks, {
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                }
+                blockName = await modtool.quickPick(
+                    blocks, {
                     title: 'GNURadio: Rename Block',
-                    placeHolder: 'Enter block name...',
+                    placeholder: 'Enter block name...',
+                    value: blockName,
                 });
             }
             if (!blockName) {
@@ -456,10 +480,18 @@ export class GNURadioController {
                 if (xmlBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No XML found, no need to update!');
                 }
-                blockName = await vscode.window.showQuickPick(xmlBlocks, {
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.mapGrcBlocks(this.moduleName!, '.xml')(blockName);
+                    if (!xmlBlocks.includes(blockName)) {
+                        blockName = undefined;
+                    }
+                }
+                blockName = await modtool.quickPick(
+                    xmlBlocks, {
                     title: 'GNURadio: Convert XML to YAML',
-                    placeHolder: 'Enter block name...',
-                    canPickMany: false,
+                    placeholder: 'Enter block name...',
+                    value: blockName,
                 });
             } else if (!modtool.filterXmlBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
@@ -499,11 +531,19 @@ export class GNURadioController {
                 if (cppBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No C++ blocks found');
                 }
+                blockName = vscode.window.activeTextEditor?.document.fileName;
+                if (blockName) {
+                    blockName = modtool.mapCppBlockImpl(blockName);
+                    if (!cppBlocks.includes(blockName)) {
+                        blockName = undefined;
+                    }
+                }
                 blockName = await modtool.quickPickWithRegex(
-                    cppBlocks,
-                    'GNURadio: Make YAML from implementation',
-                    'Enter block name or regular expression...',
-                );
+                    cppBlocks, {
+                    title: 'GNURadio: Make YAML from implementation',
+                    placeholder: 'Enter block name or regular expression...',
+                    value: blockName,
+                });
                 if (cppBlocks.includes(blockName)) {
                     blockYamlPath = join('grc', `${this.moduleName!}_${blockName}.block.yml`);
                 }
