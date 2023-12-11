@@ -64,8 +64,8 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
         name?: string;
         blockType?: QuickPickItem;
         language?: QuickPickItem;
-        addCppTest?: string;
-        addPythonTest?: string;
+        addCppTest?: boolean;
+        addPythonTest?: boolean;
         finished: boolean;
     }
 
@@ -143,7 +143,7 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             }
         );
         state.blockType = pick[0];
-        // state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
+        state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
         return (input: MultiStepInput) => pickLanguage(input, state);
     }
 
@@ -171,45 +171,51 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             }
         );
         state.language = pick[0];
-        // if (state.blockType?.label === 'noblock' && state.language.label.includes('Python')) {
-        state.finished = true;
-        //     return;
-        // }
-        // return (input: MultiStepInput) => pickTests(input, state);
+        if (state.blockType?.label === 'noblock' && state.language?.description === 'python') {
+            state.finished = true;
+            return;
+        }
+        return (input: MultiStepInput) => pickTests(input, state);
     }
 
-    // async function pickTests(input: MultiStepInput, state: State) {
-    //     let testLanguages: vscode.QuickPickItem[] = [];
-    //     if (state.blockType?.label !== 'noblock') {
-    //         testLanguages.push({ label: 'Python', description: 'python' });
-    //     }
-    //     if (state.language?.label.includes('C++')) {
-    //         testLanguages.push({ label: 'C++', description: 'cpp' });
-    //     }
-    //     const picks = await input.showQuickPick({
-    //         title: state.title,
-    //         step: 5,
-    //         totalSteps: 5,
-    //         placeholder: 'Add QA code',
-    //         items: testLanguages,
-    //         canSelectMany: true,
-    //         shouldResume: async () => false,
-    //     });
-    //     for (var pick of picks) {
-    //         if (pick.description === 'cpp') {
-    //             state.addCppTest = '--add-cpp-qa';
-    //         } else if (pick.description === 'python') {
-    //             state.addPythonTest = '--add-python-qa';
-    //         }
-    //     }
-    //     state.finished = true;
-    // }
-
-    // TODO: `gr_modtool add` requires --add-cpp-qa and/or --add-python-qa
+    async function pickTests(input: MultiStepInput, state: State) {
+        const baseUri = context.extensionUri;
+        let testLanguages: QuickPickItem[] = [];
+        if (state.blockType?.label !== 'noblock') {
+            testLanguages.push({
+                label: 'Python',
+                description: 'python',
+                iconPath: Uri.joinPath(baseUri, 'media', 'file_type_python.svg')
+            });
+        }
+        if (state.language?.label.includes('C++')) {
+            testLanguages.push({
+                label: 'C++',
+                description: 'cpp',
+                iconPath: Uri.joinPath(baseUri, 'media', 'file_type_cpp3.svg')
+            });
+        }
+        const picks = await input.showQuickPick(
+            testLanguages, {
+            title: state.title,
+            step: 5,
+            totalSteps: state.totalSteps,
+            placeHolder: 'Add QA code',
+            canPickMany: true,
+        });
+        for (var pick of picks) {
+            if (pick.description === 'cpp') {
+                state.addCppTest = true;
+            } else if (pick.description === 'python') {
+                state.addPythonTest = true;
+            }
+        }
+        state.finished = true;
+    }
 
     // TODO: Arguments?
 
-    let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 4, finished: false };
+    let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 5, finished: false };
     try {
         const gitPath = workspace.getConfiguration('git').get<string | string[]>('path');
         const gitCmd = gitPath

@@ -80,14 +80,23 @@ export class MultiStepInput {
 							resolve(<any>item);
 						}
 					}),
-					input.onDidChangeSelection(items => resolve([...items])),
 					input.onDidHide(() => {
 						(async () => {
 							reject(options.shouldResume && await options.shouldResume() ? InputFlowAction.resume : InputFlowAction.cancel);
 						})()
 							.catch(reject);
-					})
+					}),
+					input.onDidAccept(() => {
+						if (input.step === input.totalSteps) {
+							resolve(Array.from(input.selectedItems));
+						}
+					}),
 				);
+				if (!input.canSelectMany) {
+					disposables.push(
+						input.onDidChangeSelection(items => resolve([...items])),
+					);
+				}
 				if (this.current) {
 					this.current.dispose();
 				}
