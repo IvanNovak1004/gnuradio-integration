@@ -15,6 +15,10 @@ a workaround to activate the extension when the module has no blocks yet
 - Replaced `child_process` with `python-shell` for modtool commands
 - Replaced `child_process` with tasks for `gnuradio-companion` and `grcc`
 
+### Fixed
+- Fixed validation warning preventing the use of short names when creating blocks
+- Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
+
 ## [0.2.1] - 2023-12-07
 ### Added
 - Added automatic copyright value (`git config user.name`) when creating a block

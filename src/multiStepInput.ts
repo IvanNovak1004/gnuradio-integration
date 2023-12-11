@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons, InputBoxValidationMessage, InputBoxOptions, QuickPickOptions } from 'vscode';
+import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons, InputBoxOptions, QuickPickOptions, InputBoxValidationSeverity } from 'vscode';
 
 // -------------------------------------------------------
 // Helper code that wraps the API for the multi-step case.
@@ -128,7 +128,9 @@ export class MultiStepInput {
 						const value = input.value;
 						input.enabled = false;
 						input.busy = true;
-						if (!options.validateInput || !(await options.validateInput(value))) {
+						const validationMessage = await validating;
+						if (!(validationMessage && typeof validationMessage === 'object' &&
+							validationMessage.severity === InputBoxValidationSeverity.Error)) {
 							resolve(value);
 						}
 						input.enabled = true;

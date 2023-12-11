@@ -285,7 +285,7 @@ export class GNURadioController {
                     placeHolder: 'Enter block name...',  // TODO: Regular expression (python-bridge?)
                     canPickMany: false,
                 });
-            } else if (modtool.filterCppBlocks(fileUri.fsPath)) {
+            } else if (!modtool.filterCppBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected a header (.h), found ${basename(fileUri.fsPath)}`);
             } else {
                 blockName = modtool.mapCppBlocks(fileUri.fsPath);
@@ -441,7 +441,7 @@ export class GNURadioController {
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
-            } else if (modtool.filterGrcBlocks('.xml')(fileUri.fsPath)) {
+            } else if (!modtool.filterGrcBlocks('.xml')(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
             } else {
                 blockName = modtool.mapGrcBlocks('.xml')(fileUri.fsPath);
