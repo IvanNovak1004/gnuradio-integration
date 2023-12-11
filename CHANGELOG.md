@@ -9,7 +9,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added custom modtool wrapper scripts and `python-shell` dependency
 - Added a command to manually query module info (`gr_modtool info`): 
 a workaround to activate the extension when the module has no blocks yet
-- Added compile/run actions in the editor titlebar for GRC Flowgraph files
+- Added actions to compile/run GRC Flowgraph files or edit them in GNURadio Companion from the editor titlebar
 - Added a filter (regex) when creating Python bindings, making YAML from implementation, disabling or removing blocks
 
 ### Changed
@@ -19,6 +19,7 @@ a workaround to activate the extension when the module has no blocks yet
 ### Fixed
 - Fixed validation warning preventing the use of short names when creating blocks
 - Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
+- Fixed GRC Flowgraph commands not executing on currently open files
 
 ## [0.2.1] - 2023-12-07
 ### Added

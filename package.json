@@ -149,6 +149,12 @@
                     "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
                 }
             ],
+            "editor/title": [
+                {
+                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                }
+            ],
             "editor/title/run": [
                 {
                     "command": "gnuradio-integration.compileFlowgraph",

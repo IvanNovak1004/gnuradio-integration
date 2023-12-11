@@ -81,21 +81,22 @@ export class GNURadioController {
 
     private exec(cmd: string, cwd?: string) {
         vscode.tasks.executeTask(new vscode.Task(
-            {
-                type: 'shell',
-                options: { cwd: cwd ?? this.cwd }
-            },
+            { type: 'shell' },
             vscode.TaskScope.Workspace,
-            'gnuradio-companion: edit file',
             'shell',
-            new vscode.ShellExecution(cmd)
+            'grc',
+            new vscode.ShellExecution(cmd, { cwd: cwd ?? this.cwd })
         ));
     }
 
     private async execOnFile(cmd: string, fileUri?: vscode.Uri, fileExtension?: string | undefined) {
         try {
-            if (fileUri === undefined) {
-                throw Error("File required");
+            if (!fileUri) {
+                fileUri = vscode.window.activeTextEditor?.document.uri;
+                // TODO: file picker?
+                if (!fileUri) {
+                    throw Error("File required");
+                }
             }
             let stat = await vscode.workspace.fs.stat(fileUri);
             switch (stat.type) {
@@ -113,7 +114,6 @@ export class GNURadioController {
                 throw Error(`Expected file extension "${fileExtension}", but found "${extname(path)}"`);
             }
             this.exec(`${cmd} "${path}"`, dirname(path));
-            return true;
         } catch (err) {
             if (err instanceof Error) {
                 vscode.window.showErrorMessage(err.message);
@@ -160,10 +160,7 @@ export class GNURadioController {
      * This command runs `grcc %f` in the shell, producing a Python executable in the same folder as the selected file `%f`.
      */
     public async compileFlowgraph(fileUri?: vscode.Uri) {
-        if (await this.execOnFile(`"${this.grcc()}"`, fileUri, '.grc')) {
-            // TODO: C++ flowgraph?
-            vscode.window.showInformationMessage(`Compiled to "${fileUri?.fsPath.replace(/".grc$"/, ".py")}" successfully`);
-        }
+        await this.execOnFile(`"${this.grcc()}"`, fileUri, '.grc');
     }
 
     /**

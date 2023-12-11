@@ -10,20 +10,33 @@ export function activate(context: vscode.ExtensionContext) {
         ctl.setCwd(vscode.workspace.workspaceFolders[0].uri.fsPath);
     }
 
-    vscode.workspace.onDidChangeWorkspaceFolders((e) => {
-        if (e.added.length) {
-            ctl.setCwd(e.added[0].uri.fsPath);
-        } else if (e.removed.length) {
-            ctl.setCwd();
-        }
-    });
-
-    vscode.workspace.onDidChangeConfiguration((e) => {
-        if (e.affectsConfiguration('gnuradio-integration.modtool.checkXml') &&
-            vscode.workspace.getConfiguration().get('gnuradio-integration.modtool.checkXml') === true) {
-            ctl.checkXml();
-        }
-    });
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeWorkspaceFolders((e) => {
+            if (e.added.length) {
+                ctl.setCwd(e.added[0].uri.fsPath);
+            } else if (e.removed.length) {
+                ctl.setCwd();
+            }
+        }),
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration('gnuradio-integration.modtool.checkXml') &&
+                vscode.workspace.getConfiguration().get('gnuradio-integration.modtool.checkXml') === true) {
+                ctl.checkXml();
+            }
+        }),
+        vscode.tasks.onDidEndTaskProcess(e => {
+            if (e.execution.task.source === 'grc') {
+                if (e.exitCode && e.exitCode !== 0) {
+                    vscode.window.showErrorMessage(
+                        `Compilation process finished with error code ${e.exitCode}; check the terminal output for details`);
+                } else if (e.execution.task.detail?.startsWith('grcc')) {
+                    // TODO: C++ flowgraph?
+                    // TODO: read task parameters to find the compiled file
+                    vscode.window.showInformationMessage('Flowgraph compilation was successfull');
+                }
+            }
+        }),
+    );
 
     context.subscriptions.push(
         vscode.commands.registerCommand(
