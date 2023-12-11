@@ -280,11 +280,16 @@ export function quickPickWithRegex(items: string[], title?: string, placeholder?
         blockPick.onDidChangeValue(() => {
             if (!items.includes(blockPick.value)) {
                 let picks: QuickPickItem[] = items.map((label) => ({ label }));
-                picks.unshift({
+                let regexPick = {
                     label: blockPick.value,
                     description: 'Regular expression',
                     iconPath: new ThemeIcon('filter'),
-                });
+                };
+                if (items.includes(blockPick.value)) {
+                    picks.push(regexPick);
+                } else {
+                    picks.unshift(regexPick);
+                }
                 blockPick.items = picks;
             }
         });

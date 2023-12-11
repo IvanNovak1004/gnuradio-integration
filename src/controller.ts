@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { dirname, extname, basename, resolve } from 'path';
+import { dirname, extname, basename, resolve, join } from 'path';
 import { existsSync } from 'fs';
 import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
@@ -288,12 +288,18 @@ export class GNURadioController {
     public async createPythonBindings(fileUri?: vscode.Uri) {
         try {
             let blockName: string | undefined;
+            let blockBindPath = join('python', this.moduleName!, 'bindings');
             if (!fileUri) {
+                const existingBlocks = modtool.getCppBlocks(this.cwd!, this.moduleName!);
                 blockName = await modtool.quickPickWithRegex(
-                    modtool.getCppBlocks(this.cwd!, this.moduleName!),
+                    existingBlocks,
                     'GNURadio: Python Bindings',
                     'Enter block name or regular expression...',
                 );
+                if (existingBlocks.includes(blockName)) {
+                    blockBindPath = join(blockBindPath, `${blockName}_python.cc`);
+                }
+                // TODO: list all affected blocks?
             } else if (!modtool.filterCppBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected a header (.h), found ${basename(fileUri.fsPath)}`);
             } else {
@@ -302,8 +308,9 @@ export class GNURadioController {
             if (!blockName) {
                 throw Error('No block name provided');
             }
-            this.execModtool('bind', blockName);
-            vscode.window.showInformationMessage(`Python bindings written to "python/${this.moduleName!}/bindings/${blockName}_python.cc"`);
+            await this.execModtool('bind', blockName);
+            // TODO: check for failed conversions
+            vscode.window.showInformationMessage(`Python bindings written to "${blockBindPath}"`);
         } catch (err) {
             if (err instanceof Error) {
                 vscode.window.showErrorMessage(err.message);
@@ -320,12 +327,17 @@ export class GNURadioController {
      */
     public async disableBlock(blockName?: string) {
         try {
+            let successMessage = 'Matching blocks were disabled';
             if (!blockName) {
+                const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
                 blockName = await modtool.quickPickWithRegex(
-                    Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!)),
+                    Array.from(existingBlocks),
                     'GNURadio: Disable Blocks',
                     'Enter block name or regular expression...',
                 );
+                if (existingBlocks.has(blockName)) {
+                    successMessage = `Block "${blockName}" was disabled`;
+                }
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -333,8 +345,8 @@ export class GNURadioController {
             // TODO: show files to be disabled?
             const confirm = await vscode.window.showWarningMessage(`Are you sure you want to disable "${blockName}"?`, { modal: true }, "Yes");
             if (confirm === 'Yes') {
-                this.execModtool('disable', blockName);
-                vscode.window.showInformationMessage(`Block "${blockName}" was disabled`);
+                await this.execModtool('disable', blockName);
+                vscode.window.showInformationMessage(successMessage);
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -350,12 +362,17 @@ export class GNURadioController {
      */
     public async removeBlock(blockName?: string) {
         try {
+            let successMessage = 'Matching blocks were removed';
             if (!blockName) {
+                const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
                 blockName = await modtool.quickPickWithRegex(
-                    Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!)),
+                    Array.from(existingBlocks),
                     'GNURadio: Disable Blocks',
                     'Enter block name or regular expression...',
                 );
+                if (existingBlocks.has(blockName)) {
+                    successMessage = `Block "${blockName}" was removed`;
+                }
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -363,8 +380,8 @@ export class GNURadioController {
             // TODO: show files to be removed?
             const confirm = await vscode.window.showWarningMessage(`Are you sure you want to remove "${blockName}"?`, { modal: true }, "Yes");
             if (confirm === 'Yes') {
-                this.execModtool('rm', blockName);
-                vscode.window.showInformationMessage(`Block "${blockName}" was removed`);
+                await this.execModtool('rm', blockName);
+                vscode.window.showInformationMessage(successMessage);
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -479,6 +496,7 @@ export class GNURadioController {
     public async makeYamlFromImpl(fileUri?: vscode.Uri) {
         try {
             let blockName: string | undefined;
+            let blockYamlPath = 'grc';
             if (!fileUri) {
                 const cppBlocks = modtool.getCppBlockImpl(this.cwd!);
                 if (cppBlocks.length === 0) {
@@ -489,6 +507,9 @@ export class GNURadioController {
                     'GNURadio: Make YAML from implementation',
                     'Enter block name or regular expression...',
                 );
+                if (cppBlocks.includes(blockName)) {
+                    blockYamlPath = join('grc', `${this.moduleName!}_${blockName}.block.yml`);
+                }
             } else if (!modtool.filterCppBlockImpl(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected C++ source, found ${basename(fileUri.fsPath)}`);
             } else {
@@ -497,8 +518,8 @@ export class GNURadioController {
             if (!blockName) {
                 throw Error('No block name provided');
             }
-            this.execModtool('makeyaml', blockName);
-            vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
+            await this.execModtool('makeyaml', blockName);
+            vscode.window.showInformationMessage(`Block definition written to "${blockYamlPath}"`);
         } catch (err) {
             if (err instanceof Error) {
                 vscode.window.showErrorMessage(err.message);
