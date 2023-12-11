@@ -49,7 +49,7 @@ export class GNURadioController {
             vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
             return;
         }
-        const xmlBlocks = modtool.getGrcBlocks(this.cwd!, this.moduleName!, '.xml');
+        const xmlBlocks = modtool.getXmlBlocks(this.cwd!, this.moduleName!);
         vscode.commands.executeCommand('setContext', xmlFoundContextKey, xmlBlocks.length > 0);
         if (xmlBlocks.length > 0) {
             const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
@@ -452,7 +452,7 @@ export class GNURadioController {
         try {
             let blockName: string | undefined;
             if (!fileUri) {
-                const xmlBlocks = modtool.getGrcBlocks(this.cwd!, this.moduleName!, '.xml');
+                const xmlBlocks = modtool.getXmlBlocks(this.cwd!, this.moduleName!);
                 if (xmlBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No XML found, no need to update!');
                 }
@@ -461,7 +461,7 @@ export class GNURadioController {
                     placeHolder: 'Enter block name...',
                     canPickMany: false,
                 });
-            } else if (!modtool.filterGrcBlocks('.xml')(fileUri.fsPath)) {
+            } else if (!modtool.filterXmlBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
             } else {
                 blockName = modtool.mapGrcBlocks('.xml')(fileUri.fsPath);

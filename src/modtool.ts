@@ -225,16 +225,21 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
     return state.finished ? state : undefined;
 }
 
-export function filterGrcBlocks(extension: string = '.block.yml') {
-    return (filename: string) => extname(filename) === extension;
-}
+export const filterGrcBlocks = (filename: string) => filename.endsWith('.block.yml');
 export function mapGrcBlocks(moduleName: string, extension: string = '.block.yml') {
     return (filename: string) => basename(filename).slice(moduleName.length + 1, -extension.length);
 }
-export function getGrcBlocks(cwd: string, moduleName: string, extension: string = '.block.yml') {
+export function getGrcBlocks(cwd: string, moduleName: string) {
     return readdirSync(resolve(cwd, 'grc'))
-        .filter(filterGrcBlocks(extension))
-        .map(mapGrcBlocks(moduleName, extension));
+        .filter(filterGrcBlocks)
+        .map(mapGrcBlocks(moduleName));
+}
+
+export const filterXmlBlocks = (filename: string) => extname(filename) === '.xml';
+export function getXmlBlocks(cwd: string, moduleName: string) {
+    return readdirSync(resolve(cwd, 'grc'))
+        .filter(filterXmlBlocks)
+        .map(mapGrcBlocks(moduleName, '.xml'));
 }
 
 export const filterCppBlocks = (filename: string) => extname(filename) === '.h' && basename(filename) !== 'api.h';

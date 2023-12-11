@@ -20,6 +20,7 @@ a workaround to activate the extension when the module has no blocks yet
 - Fixed validation warning preventing the use of short names when creating blocks
 - Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
 - Fixed GRC Flowgraph commands not executing on currently open files
+- Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)
 
 ## [0.2.1] - 2023-12-07
 ### Added
