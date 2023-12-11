@@ -2,7 +2,7 @@
     "name": "gnuradio-integration",
     "displayName": "GNURadio Integration",
     "description": "GNURadio Integration",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "license": "MIT",
     "publisher": "AsriFox",
     "engines": {
@@ -178,11 +178,6 @@
                     "type": "string",
                     "default": "grcc",
                     "description": "GNURadio CLI compiler command"
-                },
-                "gnuradio-integration.modtool.cmd": {
-                    "type": "string",
-                    "default": "gr_modtool",
-                    "description": "GNURadio modtool command"
                 },
                 "gnuradio-integration.modtool.checkXml": {
                     "type": "boolean",

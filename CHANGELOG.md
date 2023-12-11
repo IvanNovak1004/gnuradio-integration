@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.2.2] - 2023-12-11
 ### Added
 - Added custom modtool wrapper scripts and `python-shell` dependency
 - Added a command to manually query module info (`gr_modtool info`): 
@@ -23,6 +25,9 @@ a workaround to activate the extension when the module has no blocks yet
 - Fixed sanity checks when creating Python bindings or converting XML to YAML from the context menu
 - Fixed GRC Flowgraph commands not executing on currently open files
 - Fixed YAML block filter not working because of mismatched `extname` (`.yml` vs `.block.yml`)
+
+### Removed
+- Removed GNURadio modtool command from extension settings
 
 ## [0.2.1] - 2023-12-07
 ### Added
@@ -68,7 +73,8 @@ a workaround to activate the extension when the module has no blocks yet
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.2...v0.1.3

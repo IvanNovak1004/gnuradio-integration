@@ -36,7 +36,7 @@ argparser.add_argument(
 argparser.add_argument(
     "--argument-list",
     type=str,
-    default=None,
+    default='""',
     help="The argument list for the constructor and make functions.",
 )
 argparser.add_argument(

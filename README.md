@@ -1,35 +1,46 @@
 # GNURadio Integration
 ![icon](./imgs/gnuradio-integration-icon.png)
 
-An extension to help you with work with GNURadio in VSCode.
-- Context menu actions for opening and compiling "`.grc`" files
-- Commands for manipulating the OOT module with `gr_modtool`
+An extension to help you with work with [GNURadio](https://www.gnuradio.org) in VSCode.
 
-## Command palette
-![Command palette](./imgs/command_palette.png)
-- **GNURadio Companion: Open the application**;
+Features:
+- Opening and compiling GRC Flowgraph files (`.grc`)
+- Manipulating the OOT module with `gr_modtool`
+
+## Commands
+- **GNURadio Companion:**;
+    - **Open the application**;
+    - **Edit Flowgraph** - edit the selected GRC flowgraph file in GNURadio Companion application;
+- **GNURadio Compiler**:
+    - **Compile Flowgraph** ⚠ - compile the selected GRC flowgraph file;
+    - **Compile and Run Flowgraph** ⚠ - compile and run the selected GRC flowgraph file.
 - **GNURadio Module**:
     - **Create OOT Module**;
     - **Create Block**;
-    - **Create Python Bindings**;
+    - **Create Python Bindings** ⚠️ 🪣 - generate pybind11 code based on the block's C++ header;
     - **Rename Block**;
-    - **Remove Block**;
-    - **Convert XML to YAML**.
+    - **Remove Blocks** 🪣;
+    - **Convert XML to YAML** ⚠ - convert old XML block definitions to YAML.
+
+**Warning!** Commands marked with ⚠ will overwite target files without confirmation!
+
+## Command palette
+![Command palette](./imgs/command_palette.png)
+
+**WIP**: Commands marked with 🪣 can use regular expressions to process multiple blocks at once. Picking the "Regular expression" option selects all blocks with names containing the fragment and any symbols before and after it (uses `.*{input}.*` when `{input}` is entered).
+![Regular expressions](./imgs/modtool_regex.png)
 
 ## Explorer context menu
-- [Flowgraph](./imgs/flowgraph.png):
-    - **Edit In GNURadio Companion** - edit the selected GRC flowgraph file in GNURadio Companion application;
-    - **Compile Flowgraph** - compile the selected GRC flowgraph file;
-    - **Compile and Run Flowgraph** - compile and run the selected GRC flowgraph file.
-- [Header](./imgs/create_bindings.png):
-    - **Create Python Bindings** - generate pybind11 code based on the block's C++ header;
-- [XML](./imgs/convert_xml.png):
-    - **Convert XML to YAML** - convert old XML block definitions to YAML.
+| Flowgraph | C++ block header | XML block definition |
+|-|-|-|
+| ![Flowgraph](./imgs/flowgraph.png) | ![C++ block header](./imgs/create_bindings.png) | ![XML block definition](./imgs/convert_xml.png) |
 
-**Warning!** Compilation will overwite the target file without confirmation!
+## Editor title bar
+| Flowgraph |
+|-|
+| ![Edit Flowgraph](./imgs/flowgraph_edit.png) ![Compile/Run Flowgraph](./imgs/flowgraph_run.png) | 
 
 ## Extension settings
 - **GNURadio Companion command** (default: `gnuradio-companion`);
 - **GNURadio CLI compiler command** (default: `grcc`);
-- **GNURadio modtool command** (default: `gr_modtool`);
-- **Check for XML block definitions** (default: disabled).
+- **Check for XML block definitions** on startup (default: disabled).

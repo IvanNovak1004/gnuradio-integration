@@ -381,7 +381,7 @@ export class GNURadioController {
                 }
                 blockName = await modtool.quickPickWithRegex(
                     Array.from(existingBlocks), {
-                    title: 'GNURadio: Disable Blocks',
+                    title: 'GNURadio: Remove Blocks',
                     placeholder: 'Enter block name or regular expression...',
                     value: blockName,
                 });
