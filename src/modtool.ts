@@ -3,7 +3,7 @@
 import {
     window, workspace,
     Uri, ExtensionContext,
-    InputBoxValidationSeverity, QuickPickItem
+    InputBoxValidationSeverity, QuickPickItem, ThemeIcon
 } from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
@@ -268,4 +268,32 @@ export function getCppBlockImpl(cwd: string) {
     return readdirSync(resolve(cwd, 'lib'))
         .filter(filterCppBlockImpl)
         .map(mapCppBlockImpl);
+}
+
+export function quickPickWithRegex(items: string[], title?: string, placeholder?: string) {
+    return new Promise<string>((resolve) => {
+        let blockPick = window.createQuickPick();
+        blockPick.title = title;
+        blockPick.placeholder = placeholder;
+        blockPick.canSelectMany = false;
+        blockPick.items = items.map((label) => ({ label }));
+        blockPick.onDidChangeValue(() => {
+            if (!items.includes(blockPick.value)) {
+                let picks: QuickPickItem[] = items.map((label) => ({ label }));
+                picks.unshift({
+                    label: blockPick.value,
+                    description: 'Regular expression',
+                    iconPath: new ThemeIcon('filter'),
+                });
+                blockPick.items = picks;
+            }
+        });
+        blockPick.onDidAccept(() => {
+            const selection = blockPick.activeItems[0];
+            resolve(selection.label);
+            blockPick.hide();
+        });
+        blockPick.onDidHide(() => blockPick.dispose());
+        blockPick.show();
+    });
 }

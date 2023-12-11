@@ -279,12 +279,11 @@ export class GNURadioController {
         try {
             let blockName: string | undefined;
             if (!fileUri) {
-                const headers = modtool.getCppBlocks(this.cwd!, this.moduleName!);
-                blockName = await vscode.window.showQuickPick(headers, {
-                    title: 'GNURadio: Python Bindings',
-                    placeHolder: 'Enter block name...',  // TODO: Regular expression (python-bridge?)
-                    canPickMany: false,
-                });
+                blockName = await modtool.quickPickWithRegex(
+                    modtool.getCppBlocks(this.cwd!, this.moduleName!),
+                    'GNURadio: Python Bindings',
+                    'Enter block name or regular expression...',
+                );
             } else if (!modtool.filterCppBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected a header (.h), found ${basename(fileUri.fsPath)}`);
             } else {
@@ -312,12 +311,11 @@ export class GNURadioController {
     public async disableBlock(blockName?: string) {
         try {
             if (!blockName) {
-                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
-                blockName = await vscode.window.showQuickPick(blocks, {
-                    title: 'GNURadio: Disable Block',
-                    placeHolder: 'Enter block name...',
-                    canPickMany: false,
-                });
+                blockName = await modtool.quickPickWithRegex(
+                    Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!)),
+                    'GNURadio: Disable Blocks',
+                    'Enter block name or regular expression...',
+                );
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -343,12 +341,11 @@ export class GNURadioController {
     public async removeBlock(blockName?: string) {
         try {
             if (!blockName) {
-                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
-                blockName = await vscode.window.showQuickPick(blocks, {
-                    title: 'GNURadio: Remove Block',
-                    placeHolder: 'Enter block name...',
-                    canPickMany: false,
-                });
+                blockName = await modtool.quickPickWithRegex(
+                    Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!)),
+                    'GNURadio: Disable Blocks',
+                    'Enter block name or regular expression...',
+                );
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -378,7 +375,6 @@ export class GNURadioController {
                 blockName = await vscode.window.showQuickPick(blocks, {
                     title: 'GNURadio: Rename Block',
                     placeHolder: 'Enter block name...',
-                    canPickMany: false,
                 });
             }
             if (!blockName) {
@@ -478,11 +474,11 @@ export class GNURadioController {
                 if (cppBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No C++ blocks found');
                 }
-                blockName = await vscode.window.showQuickPick(cppBlocks, {
-                    title: 'GNURadio: Make YAML from implementation',
-                    placeHolder: 'Enter block name...',
-                    canPickMany: false,
-                });
+                blockName = await modtool.quickPickWithRegex(
+                    cppBlocks,
+                    'GNURadio: Make YAML from implementation',
+                    'Enter block name or regular expression...',
+                );
             } else if (!modtool.filterCppBlockImpl(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected C++ source, found ${basename(fileUri.fsPath)}`);
             } else {

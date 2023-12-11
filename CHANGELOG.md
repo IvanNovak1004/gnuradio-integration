@@ -10,6 +10,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added a command to manually query module info (`gr_modtool info`): 
 a workaround to activate the extension when the module has no blocks yet
 - Added compile/run actions in the editor titlebar for GRC Flowgraph files
+- Added a filter (regex) when creating Python bindings, making YAML from implementation, disabling or removing blocks
 
 ### Changed
 - Replaced `child_process` with `python-shell` for modtool commands
