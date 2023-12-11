@@ -290,7 +290,12 @@ export function quickPickWithRegex(items: string[], title?: string, placeholder?
         });
         blockPick.onDidAccept(() => {
             const selection = blockPick.activeItems[0];
-            resolve(selection.label);
+            if (selection.description === 'Regular expression') {
+                // TODO: regex syntax
+                resolve(`.*${selection.label}.*`);
+            } else {
+                resolve(selection.label);
+            }
             blockPick.hide();
         });
         blockPick.onDidHide(() => blockPick.dispose());

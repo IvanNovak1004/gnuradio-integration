@@ -9,22 +9,21 @@
 """ Module to rename blocks """
 
 # Disallow running this script as a module
-if __name__ != '__main__':
+if __name__ != "__main__":
     exit(2)
 
 from sys import stderr
 from gnuradio.modtool.core import validate_name, ModToolRename, ModToolException
 from argparse import ArgumentParser
 
-argparser = ArgumentParser('gr_modtool rename')
-argparser.add_argument('blockname', type=str)
-argparser.add_argument('new_name', type=str)
+argparser = ArgumentParser("gr_modtool rename")
+argparser.add_argument("blockname", type=str)
+argparser.add_argument("new_name", type=str)
 args = argparser.parse_args()
 
 try:
-    tool = ModToolRename(args.blockname,
-                         args.new_name)
-    validate_name('block', tool.info['newname'])
+    tool = ModToolRename(args.blockname, args.new_name)
+    validate_name("block", tool.info["newname"])
     tool.run()
 except ModToolException as e:
     print(e, file=stderr)

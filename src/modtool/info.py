@@ -9,15 +9,15 @@
 """ Returns information about a module """
 
 # Disallow running this script as a module
-if __name__ != '__main__':
+if __name__ != "__main__":
     exit(2)
 
 from sys import stderr
 from gnuradio.modtool.core import ModToolInfo, ModToolException
 from argparse import ArgumentParser
 
-argparser = ArgumentParser('gr_modtool info')
-argparser.add_argument('--python-readable', action='store_true')
+argparser = ArgumentParser("gr_modtool info")
+argparser.add_argument("--python-readable", action="store_true")
 args = argparser.parse_args()
 
 try:
