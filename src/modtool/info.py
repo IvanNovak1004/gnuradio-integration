@@ -14,9 +14,14 @@ if __name__ != '__main__':
 
 from sys import stderr
 from gnuradio.modtool.core import ModToolInfo, ModToolException
+from argparse import ArgumentParser
+
+argparser = ArgumentParser('gr_modtool info')
+argparser.add_argument('--python-readable', action='store_true')
+args = argparser.parse_args()
 
 try:
-    tool = ModToolInfo(python_readable=True)
+    tool = ModToolInfo(python_readable=args.python_readable)
     tool.run()
 except ModToolException as e:
     print(e, file=stderr)

@@ -48,20 +48,8 @@ export function activate(context: vscode.ExtensionContext) {
             ctl),
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.getModuleInfo.name}`,
-            async () => {
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                const { base_dir, modname, version, incdirs }: { base_dir: string, modname: string, version: string, incdirs: string[] } = await ctl.getModuleInfo();
-                vscode.window.showInformationMessage('GNURadio Module Info', {
-                    modal: true,
-                    detail: [
-                        `Module name: ${modname}`,
-                        `Base directory: ${base_dir}`,
-                        `GNURadio version: ${version[0]}.${version.slice(1)}`,
-                        'Include directories:',
-                        ...incdirs
-                    ].join('\n'),
-                });
-            }),
+            ctl.getModuleInfo,
+            ctl),
         vscode.commands.registerCommand(
             `${ctl.extId}.${ctl.createBlock.name}`,
             ctl.createBlock,
