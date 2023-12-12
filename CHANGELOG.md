@@ -5,6 +5,17 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Added GNURadio Module view to the Explorer panel
+- Added actions in the module view to refresh view and create blocks
+- Added opening the file on click in the module view
+- Added actions on a block in the module view (context menu):
+  - Create Python Bindings;
+  - Rename Block;
+  - Remove Block.
+
+### Fixed
+- Fixed rename not checking for uniqueness of a new name
 
 ## [0.2.2] - 2023-12-11
 ### Added

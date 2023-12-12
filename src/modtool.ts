@@ -2,13 +2,44 @@
 
 import {
     window, workspace,
-    Uri, ExtensionContext,
-    InputBoxValidationSeverity, QuickPickItem, ThemeIcon
+    Uri, ExtensionContext, FileType,
+    InputBoxValidationSeverity, QuickPickItem, ThemeIcon, TreeItem
 } from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
 import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
+
+export function validateBlockName(existingBlocks: Set<string>) {
+    return (value: string) => {
+        let name = value.trim();
+        if (!name.length) {
+            return {
+                message: 'Name cannot be empty',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+        if (!/^([\w,\_]+)$/.test(name)) {
+            return {
+                message: 'Name can only contain ASCII letters, digits and underscores',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+        if (name.length < 3) {
+            return {
+                message: 'Descriptive names usually contain at least 3 symbols',
+                severity: InputBoxValidationSeverity.Warning,
+                then: null,
+            };
+        }
+        if (existingBlocks.has(name)) {
+            return {
+                message: 'Block with that name is already present',
+                severity: InputBoxValidationSeverity.Error,
+            };
+        }
+    };
+}
 
 export async function createModule() {
     const newmodName = await window.showInputBox({
@@ -89,34 +120,7 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
             totalSteps: state.totalSteps,
             value: state.name || '',
             prompt: 'Choose a unique name for the block',
-            validateInput(value) {
-                let name = value.trim();
-                if (!name.length) {
-                    return {
-                        message: 'Name cannot be empty',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-                if (!/^([\w,\_]+)$/.test(name)) {
-                    return {
-                        message: 'Name can only contain ASCII letters, digits and underscores',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-                if (name.length < 3) {
-                    return {
-                        message: 'Descriptive names usually contain at least 3 symbols',
-                        severity: InputBoxValidationSeverity.Warning,
-                        then: null,
-                    };
-                }
-                if (existingBlocks.has(name)) {
-                    return {
-                        message: 'Block with that name is already present',
-                        severity: InputBoxValidationSeverity.Error,
-                    };
-                }
-            },
+            validateInput: validateBlockName(existingBlocks),
         });
         return (input: MultiStepInput) => pickBlockType(input, state);
     }
@@ -368,4 +372,57 @@ export function quickPickWithRegex(
         blockPick.onDidHide(() => blockPick.dispose());
         blockPick.show();
     });
+}
+
+export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName: string) {
+    const readdir = (...pathSegments: string[]) =>
+        workspace.fs.readDirectory(Uri.joinPath(baseUri, ...pathSegments));
+
+    function mapBlockToTreeItem(label: string, pathSegments: string[]) {
+        return ([name, fileType]: [string, FileType]) => {
+            if (fileType !== FileType.File) {
+                // Sanity check
+                throw Error('Expected a file, got something else');
+            }
+            let item = new TreeItem(Uri.joinPath(baseUri, ...pathSegments, name));
+            item.description = true;
+            item.label = label;
+            item.command = {
+                title: 'open',
+                command: 'vscode.open',
+                arguments: [item.resourceUri!]
+            };
+            return item;
+        };
+    }
+
+    const grcFiles = (await readdir('grc'))
+        .filter((value) =>
+            value[0].startsWith(`${moduleName}_${block}`) &&
+            (filterGrcBlocks(value[0]) || filterXmlBlocks(value[0])))
+        .map(mapBlockToTreeItem('Block definition', ['grc']));
+
+    const cppFiles = (await readdir('include', 'gnuradio', moduleName))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            filterCppBlocks(value[0]))
+        .map(mapBlockToTreeItem('Public header', ['include', 'gnuradio', moduleName]));
+
+    const pyFiles = (await readdir('python', moduleName))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            filterPyBlocks(value[0]))
+        .map(mapBlockToTreeItem('Implementation', ['python', moduleName]));
+
+    const cppImplFiles = (await readdir('lib'))
+        .filter((value) =>
+            value[0].startsWith(block) &&
+            (filterCppBlockImpl(value[0]) || extname(value[0]) === '.h'))
+        .map((value) => {
+            let item = mapBlockToTreeItem('Implementation', ['lib'])(value);
+            item.label += extname(value[0]) === '.h' ? ' header' : ' source';
+            return item;
+        });
+
+    return [...grcFiles, ...pyFiles, ...cppFiles, ...cppImplFiles];
 }

@@ -64,7 +64,8 @@
             {
                 "command": "gnuradio-integration.createBlock",
                 "title": "Create Block",
-                "category": "GNURadio Module"
+                "category": "GNURadio Module",
+                "icon": "$(add)"
             },
             {
                 "command": "gnuradio-integration.createPythonBindings",
@@ -85,6 +86,12 @@
                 "command": "gnuradio-integration.convertXmlToYaml",
                 "title": "Convert XML to YAML",
                 "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.refreshView",
+                "title": "Refresh View",
+                "category": "GNURadio Module",
+                "icon": "$(refresh)"
             }
         ],
         "menus": {
@@ -164,6 +171,32 @@
                     "command": "gnuradio-integration.runFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc"
                 }
+            ],
+            "view/title": [
+                {
+                    "command": "gnuradio-integration.refreshView",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation"
+                },
+                {
+                    "command": "gnuradio-integration.createBlock",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "gnuradio-integration.createPythonBindings",
+                    "when": "view == gnuradioModule && viewItem == block"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlock",
+                    "when": "view == gnuradioModule && viewItem == block"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlock",
+                    "when": "view == gnuradioModule && viewItem == block"
+                }
             ]
         },
         "configuration": {
@@ -193,7 +226,15 @@
                     ".grc"
                 ]
             }
-        ]
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "gnuradioModule",
+                    "name": "GNURadio Module"
+                }
+            ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
