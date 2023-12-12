@@ -37,7 +37,8 @@
             {
                 "command": "gnuradio-integration.editInGnuradioCompanion",
                 "title": "Edit Flowgraph",
-                "category": "GNURadio Companion"
+                "category": "GNURadio Companion",
+                "icon": "$(circuit-board)"
             },
             {
                 "command": "gnuradio-integration.compileFlowgraph",
@@ -92,6 +93,46 @@
                 "title": "Refresh View",
                 "category": "GNURadio Module",
                 "icon": "$(refresh)"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenBeside",
+                "title": "Open to the Side",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenFolder",
+                "title": "Open Containing Folder",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenWith",
+                "title": "Open With...",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenTimeline",
+                "title": "Open Timeline",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCopyPath",
+                "title": "Copy Path",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCopyPathRelative",
+                "title": "Copy Relative Path",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileSelectForCompare",
+                "title": "Select for Compare",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCompareSelected",
+                "title": "Compare with Selected",
+                "category": "File"
             }
         ],
         "menus": {
@@ -154,12 +195,45 @@
                 {
                     "command": "gnuradio-integration.convertXmlToYaml",
                     "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenBeside",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenFolder",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenWith",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenTimeline",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPath",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPathRelative",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileSelectForCompare",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCompareSelected",
+                    "when": "false"
                 }
             ],
             "editor/title": [
                 {
                     "command": "gnuradio-integration.editInGnuradioCompanion",
-                    "when": "resourceScheme == file && resourceExtname == .grc"
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "navigation"
                 }
             ],
             "editor/title/run": [
@@ -176,26 +250,69 @@
                 {
                     "command": "gnuradio-integration.refreshView",
                     "when": "view == gnuradioModule",
-                    "group": "navigation"
+                    "group": "navigation@2"
                 },
                 {
                     "command": "gnuradio-integration.createBlock",
                     "when": "view == gnuradioModule",
-                    "group": "navigation"
+                    "group": "navigation@1"
                 }
             ],
             "view/item/context": [
                 {
                     "command": "gnuradio-integration.createPythonBindings",
-                    "when": "view == gnuradioModule && viewItem == block"
+                    "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.cpp/",
+                    "group": "z_commands"
                 },
                 {
                     "command": "gnuradio-integration.renameBlock",
-                    "when": "view == gnuradioModule && viewItem == block"
+                    "when": "view == gnuradioModule && viewItem =~ /^block/",
+                    "group": "7_modification@1"
                 },
                 {
                     "command": "gnuradio-integration.removeBlock",
-                    "when": "view == gnuradioModule && viewItem == block"
+                    "when": "view == gnuradioModule && viewItem =~ /^block/",
+                    "group": "7_modification@2"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenBeside",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenFolder",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenWith",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenTimeline",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "4_timeline"
+                },
+                {
+                    "command": "gnuradio-integration.fileSelectForCompare",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "3_compare"
+                },
+                {
+                    "command": "gnuradio-integration.fileCompareSelected",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/) && resourceSelectedForCompare",
+                    "group": "3_compare"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPath",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "6_copypath"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPathRelative",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "6_copypath"
                 }
             ]
         },

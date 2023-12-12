@@ -95,11 +95,27 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.window.registerTreeDataProvider('gnuradioModule', ctl);
 
+    const registerTreeItemAlias = (alias: string, command: string) =>
+        vscode.commands.registerCommand(
+            `${ctl.extId}.${alias}`,
+            (item: vscode.TreeItem) => vscode.commands.executeCommand(
+                command, item.resourceUri!,
+            ));
+
     context.subscriptions.push(
         vscode.commands.registerCommand(
             `${ctl.extId}.refreshView`,
             ctl.refresh,
             ctl),
+        // TODO: Collapse all?
+        registerTreeItemAlias('fileOpenBeside', 'explorer.openToSide'),
+        registerTreeItemAlias('fileOpenFolder', 'revealFileInOS'),
+        registerTreeItemAlias('fileOpenWith', 'explorer.openWith'),
+        registerTreeItemAlias('fileOpenTimeline', 'files.openTimeline'),
+        registerTreeItemAlias('fileCopyPath', 'copyFilePath'),
+        registerTreeItemAlias('fileCopyPathRelative', 'copyRelativeFilePath'),
+        registerTreeItemAlias('fileSelectForCompare', 'selectForCompare'),
+        registerTreeItemAlias('fileCompareSelected', 'compareFiles'),
     );
 }
 

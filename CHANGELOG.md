@@ -13,6 +13,18 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   - Create Python Bindings;
   - Rename Block;
   - Remove Block.
+- Added context menu actions on block implementation files in the module view:
+  - Open to the Side;
+  - Open Containing Folder;
+  - Open With...;
+  - Open Timeline;
+  - Copy Path;
+  - Copy Relative Path;
+  - Select for Compare;
+  - Compare with Selected.
+
+### Changed
+- Moved 'Edit Flowgraph' action to the navigation section of editor titlebar, so now it's a visible icon button
 
 ### Fixed
 - Fixed rename not checking for uniqueness of a new name
