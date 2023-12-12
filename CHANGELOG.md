@@ -11,15 +11,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Added opening the file on click in the module view
 - Added actions on a block in the module view (context menu):
   - Create Python Bindings;
-  - Rename Block;
-  - Remove Block.
+  - Rename Block (keybind: F2);
+  - Remove Block (keybind: Del).
 - Added context menu actions on block implementation files in the module view:
-  - Open to the Side;
-  - Open Containing Folder;
+  - Open to the Side (keybind: Ctrl+Enter);
+  - Open Containing Folder (keybind: Alt+Ctrl+R);
   - Open With...;
   - Open Timeline;
-  - Copy Path;
-  - Copy Relative Path;
+  - Copy Path (keybind: Alt+Ctrl+C);
+  - Copy Relative Path (keybind: Alt+Ctrl+Shift+C);
   - Select for Compare;
   - Compare with Selected.
 

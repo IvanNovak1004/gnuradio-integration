@@ -316,6 +316,38 @@
                 }
             ]
         },
+        "keybindings": [
+            {
+                "key": "f2",
+                "command": "gnuradio-integration.renameBlock",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "delete",
+                "command": "gnuradio-integration.removeBlock",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Ctrl+enter",
+                "command": "gnuradio-integration.fileOpenBeside",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+r",
+                "command": "gnuradio-integration.fileOpenFolder",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+c",
+                "command": "gnuradio-integration.fileCopyPath",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+Shift+c",
+                "command": "gnuradio-integration.fileCopyPathRelative",
+                "when": "focusedView == gnuradioModule"
+            }
+        ],
         "configuration": {
             "title": "GNURadio Integration",
             "properties": {

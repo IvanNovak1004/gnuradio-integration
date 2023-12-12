@@ -93,21 +93,36 @@ export function activate(context: vscode.ExtensionContext) {
             ctl),
     );
 
-    vscode.window.registerTreeDataProvider('gnuradioModule', ctl);
+    const moduleView = vscode.window.createTreeView(
+        'gnuradioModule', {
+        treeDataProvider: ctl,
+        showCollapseAll: true,
+        canSelectMany: false,
+    });
 
     const registerTreeItemAlias = (alias: string, command: string) =>
         vscode.commands.registerCommand(
             `${ctl.extId}.${alias}`,
-            (item: vscode.TreeItem) => vscode.commands.executeCommand(
-                command, item.resourceUri!,
-            ));
+            (item?: vscode.TreeItem) => {
+                if (!item) {
+                    if (!moduleView.selection.length) {
+                        return;
+                    }
+                    item = moduleView.selection[0];
+                }
+                if (!item.resourceUri) {
+                    return;
+                }
+                return vscode.commands.executeCommand(
+                    command, item.resourceUri,
+                );
+            });
 
     context.subscriptions.push(
         vscode.commands.registerCommand(
             `${ctl.extId}.refreshView`,
             ctl.refresh,
             ctl),
-        // TODO: Collapse all?
         registerTreeItemAlias('fileOpenBeside', 'explorer.openToSide'),
         registerTreeItemAlias('fileOpenFolder', 'revealFileInOS'),
         registerTreeItemAlias('fileOpenWith', 'explorer.openWith'),
