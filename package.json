@@ -90,8 +90,8 @@
             },
             {
                 "command": "gnuradio-integration.refreshView",
-                "title": "Refresh View",
-                "category": "GNURadio Module",
+                "title": "Refresh",
+                "category": "GNURadio Module View",
                 "icon": "$(refresh)"
             },
             {
@@ -380,7 +380,10 @@
             "explorer": [
                 {
                     "id": "gnuradioModule",
-                    "name": "GNURadio Module"
+                    "name": "GNURadio Module",
+                    "contextualTitle": "GNURadio Module",
+                    "icon": "./imgs/gnuradio-integration-icon.png",
+                    "when": "gnuradio-integration.moduleFound"
                 }
             ]
         }
