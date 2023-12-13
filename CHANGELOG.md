@@ -5,23 +5,24 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.3.0] - 2023-12-13
 ### Added
-- Added GNURadio Module view to the Explorer panel
-- Added actions in the module view to refresh view and create blocks
-- Added opening the file on click in the module view
-- Added actions on a block in the module view (context menu):
-  - Create Python Bindings;
-  - Rename Block (keybind: F2);
-  - Remove Block (keybind: Del).
-- Added context menu actions on block implementation files in the module view:
-  - Open to the Side (keybind: Ctrl+Enter);
-  - Open Containing Folder (keybind: Alt+Ctrl+R);
-  - Open With...;
-  - Open Timeline;
-  - Copy Path (keybind: Alt+Ctrl+C);
-  - Copy Relative Path (keybind: Alt+Ctrl+Shift+C);
-  - Select for Compare;
-  - Compare with Selected.
+- Added GNURadio Module view to the Explorer panel that enables:
+  - Viewing all blocks in the module and corresponding files;
+  - Creating new blocks;
+  - Creating Python bindings (context menu);
+  - Renaming blocks (context menu, keybind: F2);
+  - Removing blocks (context menu, keybind: Del);
+  - Performing common file actions (context menu and keybinds), like in the file explorer view:
+    - Open to the Side (keybind: Ctrl+Enter);
+    - Open Containing Folder (keybind: Alt+Ctrl+R);
+    - Open With...;
+    - Open Timeline;
+    - Copy Path (keybind: Alt+Ctrl+C);
+    - Copy Relative Path (keybind: Alt+Ctrl+Shift+C);
+    - Select for Compare;
+    - Compare with Selected.
 
 ### Changed
 - Moved 'Edit Flowgraph' action to the navigation section of editor titlebar, so now it's a visible icon button
@@ -100,7 +101,8 @@ a workaround to activate the extension when the module has no blocks yet
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.0...HEAD
+[0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.3...v0.2.0
