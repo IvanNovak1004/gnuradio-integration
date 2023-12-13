@@ -25,6 +25,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Changed
 - Moved 'Edit Flowgraph' action to the navigation section of editor titlebar, so now it's a visible icon button
+- Changed warning and success messages to show matching block names for commands with regex:
+  - Create Python Bindings;
+  - Disable Blocks;
+  - Remove Blocks.
 
 ### Fixed
 - Fixed rename not checking for uniqueness of a new name

@@ -285,7 +285,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async createPythonBindings(block?: vscode.Uri | vscode.TreeItem) {
         try {
             let blockName: string | undefined;
-            let blockBindPath = join('python', this.moduleName!, 'bindings');
+            const existingBlocks = modtool.getCppBlocks(this.cwd!, this.moduleName!);
             if (block instanceof vscode.TreeItem) {
                 blockName = typeof block.label === 'object'
                     ? block.label.label
@@ -300,7 +300,6 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 }
                 blockName = modtool.mapCppBlocks(block.fsPath);
             } else {
-                const existingBlocks = modtool.getCppBlocks(this.cwd!, this.moduleName!);
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
                     blockName = modtool.mapCppBlocks(blockName);
@@ -317,13 +316,19 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 if (!blockName) {
                     return;
                 }
-                if (existingBlocks.includes(blockName)) {
-                    blockBindPath = join(blockBindPath, `${blockName}_python.cc`);
-                }
+            }
+            let successMessage: string;
+            if (existingBlocks.includes(blockName)) {
+                const blockBindPath = join('python', this.moduleName!, 'bindings', `${blockName}_python.cc`);
+                successMessage = `Python bindings written to "${blockBindPath}"`;
+            } else {
+                const re = RegExp(blockName);
+                const matchingBlocks = existingBlocks.filter(block => re.test(block));
+                successMessage = 'Python bindings created for blocks: ', matchingBlocks.join(', ');
             }
             await this.execModtool('bind', blockName);
             // TODO: check for failed conversions
-            vscode.window.showInformationMessage(`Python bindings written to "${blockBindPath}"`);
+            vscode.window.showInformationMessage(successMessage);
         } catch (err) {
             if (err instanceof Error) {
                 vscode.window.showErrorMessage(err.message);
@@ -340,10 +345,9 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      */
     public async disableBlock(block?: vscode.TreeItem) {
         try {
-            let successMessage = 'Matching blocks were disabled';
             let blockName = block?.label;
+            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
             if (!blockName) {
-                const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
                     blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
@@ -357,16 +361,28 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 if (!blockName) {
                     return;
                 }
-                if (existingBlocks.has(blockName)) {
-                    successMessage = `Block "${blockName}" was disabled`;
-                }
             } else if (typeof blockName === 'object') {
                 blockName = blockName.label;
             }
+            let warningMessage: string;
+            let successMessage: string;
+            let detailMessage: string[] = [];
+            if (existingBlocks.has(blockName)) {
+                warningMessage = `Are you sure you want to disable "${blockName}"?`;
+                successMessage = `Block "${blockName}" was disabled`;
+            } else {
+                warningMessage = 'Are you sure you want to disable multiple blocks?';
+                const re = RegExp(blockName);
+                existingBlocks.forEach(block => {
+                    if (re.test(block)) {
+                        detailMessage.push(`"${block}"`);
+                    }
+                });
+                successMessage = 'Matching blocks were disabled: ', detailMessage.join(', ');
+                detailMessage.unshift('The following blocks will be disabled:');
+            }
             const confirm = await vscode.window.showWarningMessage(
-                `Are you sure you want to disable "${blockName}"?`,
-                { modal: true },
-                'Yes');
+                warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
             if (confirm === 'Yes') {
                 await this.execModtool('disable', blockName);
                 vscode.window.showInformationMessage(successMessage);
@@ -386,9 +402,8 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async removeBlock(block?: vscode.TreeItem) {
         try {
             let blockName = block?.label;
-            let successMessage = 'Matching blocks were removed';
+            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
             if (!blockName) {
-                const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
                     blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
@@ -402,20 +417,31 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 if (!blockName) {
                     return;
                 }
-                if (existingBlocks.has(blockName)) {
-                    successMessage = `Block "${blockName}" was removed`;
-                }
             } else if (typeof blockName === 'object') {
                 blockName = blockName.label;
             }
-            // TODO: handle regex separately
-            let blockFiles = (await modtool.getBlockFilesTree(blockName, vscode.Uri.file(this.cwd!), this.moduleName!))
-                .map(item => item.resourceUri!.fsPath.slice(this.cwd!.length + 1));
-            blockFiles.unshift('The following files will be deleted:');
+            let warningMessage: string;
+            let successMessage: string;
+            let detailMessage: string[] = [];
+            if (existingBlocks.has(blockName)) {
+                warningMessage = `Are you sure you want to remove "${blockName}"?`;
+                successMessage = `Block "${blockName}" was removed`;
+                detailMessage = (await modtool.getBlockFilesTree(blockName, vscode.Uri.file(this.cwd!), this.moduleName!))
+                    .map(item => item.resourceUri!.fsPath.slice(this.cwd!.length + 1));
+                detailMessage.unshift('The following files will be deleted:');
+            } else {
+                warningMessage = `Are you sure you want to remove multiple blocks?`;
+                const re = RegExp(blockName);
+                existingBlocks.forEach(block => {
+                    if (re.test(block)) {
+                        detailMessage.push(`"${block}"`);
+                    }
+                });
+                successMessage = 'Matching blocks were removed: ' + detailMessage.join(', ');
+                detailMessage.unshift('The following blocks will be removed:');
+            }
             const confirm = await vscode.window.showWarningMessage(
-                `Are you sure you want to remove "${blockName}"?`,
-                { detail: blockFiles.join('\n- '), modal: true },
-                'Yes');
+                warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
             if (confirm === 'Yes') {
                 await this.execModtool('rm', blockName);
                 vscode.window.showInformationMessage(successMessage);
@@ -460,7 +486,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 validateInput: modtool.validateBlockName(existingBlocks),
             });
             if (!newBlockName) {
-                throw Error('No valid name provided');
+                return;
             }
             let blockFiles = (await modtool.getBlockFilesTree(blockName, vscode.Uri.file(this.cwd!), this.moduleName!))
                 .map(item => item.resourceUri!.fsPath.slice(this.cwd!.length + 1));
