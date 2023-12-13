@@ -5,24 +5,31 @@ An extension to help you with work with [GNURadio](https://www.gnuradio.org) in 
 
 Features:
 - Opening and compiling GRC Flowgraph files (`.grc`)
+- Browsing the OOT module to see all blocks and the corresponding files
 - Manipulating the OOT module with `gr_modtool`
+
+## OOT Module Explorer
+If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** tree view will appear in the Explorer container. All blocks within that module are presented with the corresponding files: YAML GRC block definition, Python implementation for Python blocks, C++ header and implementation for C++ blocks.
+
+![Module view, block context menu](./imgs/module_tree.png) ![Module view, file context menu](./imgs/module_tree_contextmenu.png)
 
 ## Commands
 - **GNURadio Companion:**;
     - **Open the application**;
     - **Edit Flowgraph** - edit the selected GRC flowgraph file in GNURadio Companion application;
 - **GNURadio Compiler**:
-    - **Compile Flowgraph** ⚠ - compile the selected GRC flowgraph file;
-    - **Compile and Run Flowgraph** ⚠ - compile and run the selected GRC flowgraph file.
+    - **Compile Flowgraph** ⚠️ - compile the selected GRC flowgraph file;
+    - **Compile and Run Flowgraph** ⚠️ - compile and run the selected GRC flowgraph file.
 - **GNURadio Module**:
     - **Create OOT Module**;
     - **Create Block**;
     - **Create Python Bindings** ⚠️ 🪣 - generate pybind11 code based on the block's C++ header;
     - **Rename Block**;
     - **Remove Blocks** 🪣;
-    - **Convert XML to YAML** ⚠ - convert old XML block definitions to YAML.
+    - **Convert XML to YAML** ⚠️ - convert old XML block definitions to YAML.
+- **GNURadio Module View: Refresh**.
 
-**Warning!** Commands marked with ⚠ will overwite target files without confirmation!
+**Warning!** Commands marked with ⚠️ will overwite target files without confirmation!
 
 ## Command palette
 ![Command palette](./imgs/command_palette.png)
@@ -38,7 +45,7 @@ Features:
 ## Editor title bar
 | Flowgraph |
 |-|
-| ![Edit Flowgraph](./imgs/flowgraph_edit.png) ![Compile/Run Flowgraph](./imgs/flowgraph_run.png) | 
+| ![Edit or Compile/Run Flowgraph](./imgs/flowgraph_edit.png) |
 
 ## Extension settings
 - **GNURadio Companion command** (default: `gnuradio-companion`);
