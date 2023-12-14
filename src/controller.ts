@@ -55,7 +55,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
             let updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
             if (updateAll === 'Yes') {
-                this.execModtool('update', '--complete');
+                await this.execModtool('update', '--complete');
                 vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
                 updateAll = await vscode.window.showInformationMessage('Block definitions written to "grc/".', dontShowAgain);
             }
@@ -126,12 +126,10 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
         const output: string[] = await PythonShell.run(`${command}.py`, {
             scriptPath: resolve(this.context.extensionPath, 'src', 'modtool'),
             mode: 'text', encoding: 'utf8',
-            stderrParser: data => this.print(data),
+            parser: data => { this.print(data); return data; },
+            stderrParser: data => { this.print(data); return data; },
             cwd: this.cwd, args,
         });
-        for (const line of output) {
-            this.print(line);
-        }
         this.print('');
         return output;
     }
@@ -265,7 +263,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             if (state.addPythonTest) {
                 args.push('--add-python-qa');
             }
-            this.execModtool('add', ...args);
+            await this.execModtool('add', ...args);
             const blockPath = state.language!.description === 'python'
                 ? resolve(this.cwd!, 'python', this.moduleName!, `${state.name}.py`)
                 : resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!, `${state.name}.h`);
@@ -496,7 +494,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 { detail: blockFiles.join('\n- '), modal: true },
                 'Yes');
             if (confirm === 'Yes') {
-                this.execModtool('rename', blockName);
+                await this.execModtool('rename', blockName, newBlockName);
                 vscode.window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
             }
         } catch (err) {
@@ -540,12 +538,12 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             if (!blockName) {
                 const updateAll = await vscode.window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
                 if (updateAll === 'Yes') {
-                    this.execModtool('update', '--complete');
+                    await this.execModtool('update', '--complete');
                     vscode.window.showInformationMessage(`Block definitions written to "grc/"`);
                 }
                 return;
             }
-            this.execModtool('update', blockName);
+            await this.execModtool('update', blockName);
             vscode.window.showInformationMessage(`Block definition written to "grc/${this.moduleName!}_${blockName}.block.yml"`);
         } catch (err) {
             if (err instanceof Error) {

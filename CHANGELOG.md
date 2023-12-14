@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Fixed
+- Fixed commands (Create Block, Rename Block, Convert XML to YAML) not waiting until modtool execution is finished, thus displaying success messages even on failure
 
 ## [0.3.0] - 2023-12-13
 ### Added
