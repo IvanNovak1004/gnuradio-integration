@@ -7,16 +7,20 @@ import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
 
 export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeItem> {
-    private context: vscode.ExtensionContext;
+    private readonly extId: string;
+    private readonly extRoot: vscode.Uri;
     private _outputChannel: vscode.OutputChannel;
     private cwd?: string;
     private moduleName?: string;
-    public readonly extId: string;
 
     constructor(context: vscode.ExtensionContext) {
-        this.context = context;
-        this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
         this.extId = context.extension.packageJSON.name;
+        this.extRoot = context.extensionUri;
+        this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
+    }
+
+    public dispose() {
+        this._outputChannel.dispose();
     }
 
     /**
@@ -65,66 +69,14 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
         }
     }
 
-    private grc() {
-        return vscode.workspace.getConfiguration(this.extId)
-            .get<string>('companion.cmd') ?? 'gnuradio-companion';
-    }
-
-    private grcc() {
-        return vscode.workspace.getConfiguration(this.extId)
-            .get<string>('compiler.cmd') ?? 'grcc';
-    }
-
     private print(value: string) {
         this._outputChannel.appendLine(value);
-    }
-
-    private exec(cmd: string, cwd?: string) {
-        vscode.tasks.executeTask(new vscode.Task(
-            { type: 'shell' },
-            vscode.TaskScope.Workspace,
-            'shell',
-            'grc',
-            new vscode.ShellExecution(cmd, { cwd: cwd ?? this.cwd })
-        ));
-    }
-
-    private async execOnFile(cmd: string, fileUri?: vscode.Uri, fileExtension?: string | undefined) {
-        try {
-            if (!fileUri) {
-                fileUri = vscode.window.activeTextEditor?.document.uri;
-                // TODO: file picker?
-                if (!fileUri) {
-                    throw Error("File required");
-                }
-            }
-            let stat = await vscode.workspace.fs.stat(fileUri);
-            switch (stat.type) {
-                case vscode.FileType.File:
-                    break;
-                case vscode.FileType.Directory:
-                    throw Error("File required, but folder was provided");
-                case vscode.FileType.SymbolicLink:
-                    throw Error("File required, but symlink was provided");
-                default:
-                    throw Error("File required, but something else was provided");
-            }
-            let path = fileUri.fsPath;
-            if (fileExtension && extname(path) !== fileExtension) {
-                throw Error(`Expected file extension "${fileExtension}", but found "${extname(path)}"`);
-            }
-            this.exec(`${cmd} "${path}"`, dirname(path));
-        } catch (err) {
-            if (err instanceof Error) {
-                vscode.window.showErrorMessage(err.message);
-            }
-        }
     }
 
     private async execModtool(command: 'add' | 'bind' | 'disable' | 'info' | 'makeyaml' | 'rename' | 'rm' | 'update', ...args: string[]): Promise<string[]> {
         this.print(`[Running] gr_modtool ${command} ${args.join(' ')}`);
         const output: string[] = await PythonShell.run(`${command}.py`, {
-            scriptPath: resolve(this.context.extensionPath, 'src', 'modtool'),
+            scriptPath: resolve(this.extRoot.fsPath, 'src', 'modtool'),
             mode: 'text', encoding: 'utf8',
             parser: data => { this.print(data); return data; },
             stderrParser: data => { this.print(data); return data; },
@@ -132,42 +84,6 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
         });
         this.print('');
         return output;
-    }
-
-    /** 
-     * Open GNURadio Companion application.
-     * 
-     * This command runs `gnuradio-companion` in the shell.
-     */
-    public async openGnuradioCompanion() {
-        this.exec(`"${this.grc()}"`);
-    }
-
-    /** 
-     * Edit the file in GNURadio Companion application.
-     * 
-     * This command runs `gnuradio-companion %f` in the shell, opening the selected file `%f`.
-     */
-    public async editInGnuradioCompanion(fileUri?: vscode.Uri) {
-        await this.execOnFile(`"${this.grc()}"`, fileUri, '.grc');
-    }
-
-    /**
-     * Compile the GRC flowgraph file.
-     * 
-     * This command runs `grcc %f` in the shell, producing a Python executable in the same folder as the selected file `%f`.
-     */
-    public async compileFlowgraph(fileUri?: vscode.Uri) {
-        await this.execOnFile(`"${this.grcc()}"`, fileUri, '.grc');
-    }
-
-    /**
-     * Run the GRC flowgraph file.
-     * 
-     * This command runs `grcc -r %f` in the shell, producing a Python executable in the same folder as the selected file `%f` and running it.
-     */
-    public async runFlowgraph(fileUri?: vscode.Uri) {
-        await this.execOnFile(`"${this.grcc()}" -r`, fileUri, '.grc');
     }
 
     /**
@@ -184,7 +100,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             }
             this.print(`[Running] gr_modtool newmod ${newmodName}`);
             const output: string[] = await PythonShell.run('newmod.py', {
-                scriptPath: resolve(this.context.extensionPath, 'src', 'modtool'),
+                scriptPath: resolve(this.extRoot.fsPath, 'src', 'modtool'),
                 mode: 'text', encoding: 'utf8',
                 stderrParser: data => this.print(data),
                 cwd: parentDir,
@@ -243,7 +159,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async createBlock() {
         try {
             const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
-            const state = await modtool.createBlock(this.context, existingBlocks);
+            const state = await modtool.createBlock(this.extRoot, existingBlocks);
             if (!state) {
                 return;
             }

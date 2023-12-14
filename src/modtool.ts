@@ -2,8 +2,8 @@
 
 import {
     window, workspace,
-    Uri, ExtensionContext, FileType,
-    InputBoxValidationSeverity, QuickPickItem, ThemeIcon, TreeItem
+    Uri, FileType, ThemeIcon, TreeItem,
+    InputBoxValidationSeverity, QuickPickItem
 } from 'vscode';
 import { readdirSync } from 'fs';
 import { basename, extname, resolve } from 'path';
@@ -86,7 +86,7 @@ export async function createModule() {
     return { newmodName, parentDir };
 }
 
-export async function createBlock(context: ExtensionContext, existingBlocks: Set<string>) {
+export async function createBlock(extRoot: Uri, existingBlocks: Set<string>) {
     interface State {
         title: string;
         step: number;
@@ -152,18 +152,17 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
     }
 
     async function pickLanguage(input: MultiStepInput, state: State) {
-        const baseUri = context.extensionUri;
         const pick = await input.showQuickPick(
             [
                 {
                     label: 'Python',
                     description: 'python',
-                    iconPath: Uri.joinPath(baseUri, 'media', 'file_type_python.svg')
+                    iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
                 },
                 {
                     label: 'C++',
                     description: 'cpp',
-                    iconPath: Uri.joinPath(baseUri, 'media', 'file_type_cpp3.svg')
+                    iconPath: Uri.joinPath(extRoot, 'media', 'file_type_cpp3.svg')
                 },
             ],
             {
@@ -183,20 +182,19 @@ export async function createBlock(context: ExtensionContext, existingBlocks: Set
     }
 
     async function pickTests(input: MultiStepInput, state: State) {
-        const baseUri = context.extensionUri;
         let testLanguages: QuickPickItem[] = [];
         if (state.blockType?.label !== 'noblock') {
             testLanguages.push({
                 label: 'Python',
                 description: 'python',
-                iconPath: Uri.joinPath(baseUri, 'media', 'file_type_python.svg')
+                iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
             });
         }
         if (state.language?.label.includes('C++')) {
             testLanguages.push({
                 label: 'C++',
                 description: 'cpp',
-                iconPath: Uri.joinPath(baseUri, 'media', 'file_type_cpp3.svg')
+                iconPath: Uri.joinPath(extRoot, 'media', 'file_type_cpp3.svg')
             });
         }
         const picks = await input.showQuickPick(
