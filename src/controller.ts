@@ -5,6 +5,7 @@ import { dirname, extname, basename, resolve, join } from 'path';
 import { existsSync } from 'fs';
 import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
+import * as blocks from './blockFilter';
 
 export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeItem> {
     private readonly extId: string;
@@ -53,7 +54,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
             return;
         }
-        const xmlBlocks = modtool.getXmlBlocks(this.cwd!, this.moduleName!);
+        const xmlBlocks = blocks.getXmlBlocks(this.cwd!, this.moduleName!);
         vscode.commands.executeCommand('setContext', xmlFoundContextKey, xmlBlocks.length > 0);
         if (xmlBlocks.length > 0) {
             const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
@@ -158,7 +159,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      */
     public async createBlock() {
         try {
-            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            const existingBlocks = blocks.getAllBlocks(this.cwd!, this.moduleName!);
             const state = await modtool.createBlock(this.extRoot, existingBlocks);
             if (!state) {
                 return;
@@ -199,7 +200,7 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async createPythonBindings(block?: vscode.Uri | vscode.TreeItem) {
         try {
             let blockName: string | undefined;
-            const existingBlocks = modtool.getCppBlocks(this.cwd!, this.moduleName!);
+            const existingBlocks = blocks.getCppBlocks(this.cwd!, this.moduleName!);
             if (block instanceof vscode.TreeItem) {
                 blockName = typeof block.label === 'object'
                     ? block.label.label
@@ -209,14 +210,14 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                     return;
                 }
             } else if (block instanceof vscode.Uri) {
-                if (!modtool.filterCppBlocks(block.fsPath)) {
+                if (!blocks.filterCppBlocks(block.fsPath)) {
                     throw Error(`Invalid file type: expected a header (.h), found ${basename(block.fsPath)}`);
                 }
-                blockName = modtool.mapCppBlocks(block.fsPath);
+                blockName = blocks.mapCppBlocks(block.fsPath);
             } else {
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.mapCppBlocks(blockName);
+                    blockName = blocks.mapCppBlocks(blockName);
                     if (!existingBlocks.includes(blockName)) {
                         blockName = undefined;
                     }
@@ -260,11 +261,11 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async disableBlock(block?: vscode.TreeItem) {
         try {
             let blockName = block?.label;
-            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            const existingBlocks = blocks.getAllBlocks(this.cwd!, this.moduleName!);
             if (!blockName) {
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                    blockName = blocks.filteredMapBlockFile(blockName, this.moduleName!);
                 }
                 blockName = await modtool.quickPickWithRegex(
                     Array.from(existingBlocks), {
@@ -316,11 +317,11 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
     public async removeBlock(block?: vscode.TreeItem) {
         try {
             let blockName = block?.label;
-            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            const existingBlocks = blocks.getAllBlocks(this.cwd!, this.moduleName!);
             if (!blockName) {
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                    blockName = blocks.filteredMapBlockFile(blockName, this.moduleName!);
                 }
                 blockName = await modtool.quickPickWithRegex(
                     Array.from(existingBlocks), {
@@ -374,16 +375,16 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
      */
     public async renameBlock(block?: vscode.TreeItem) {
         try {
-            const existingBlocks = modtool.getAllBlocks(this.cwd!, this.moduleName!);
+            const existingBlocks = blocks.getAllBlocks(this.cwd!, this.moduleName!);
             let blockName = block?.label;
             if (!blockName) {
-                const blocks = Array.from(modtool.getAllBlocks(this.cwd!, this.moduleName!));
+                const existingBlocks = Array.from(blocks.getAllBlocks(this.cwd!, this.moduleName!));
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.filteredMapBlockFile(blockName, this.moduleName!);
+                    blockName = blocks.filteredMapBlockFile(blockName, this.moduleName!);
                 }
                 blockName = await modtool.quickPick(
-                    blocks, {
+                    existingBlocks, {
                     title: 'GNURadio: Rename Block',
                     placeholder: 'Enter block name...',
                     value: blockName,
@@ -429,13 +430,13 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
         try {
             let blockName: string | undefined;
             if (!fileUri) {
-                const xmlBlocks = modtool.getXmlBlocks(this.cwd!, this.moduleName!);
+                const xmlBlocks = blocks.getXmlBlocks(this.cwd!, this.moduleName!);
                 if (xmlBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No XML found, no need to update!');
                 }
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.mapGrcBlocks(this.moduleName!, '.xml')(blockName);
+                    blockName = blocks.mapGrcBlocks(this.moduleName!, '.xml')(blockName);
                     if (!xmlBlocks.includes(blockName)) {
                         blockName = undefined;
                     }
@@ -446,10 +447,10 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                     placeholder: 'Enter block name...',
                     value: blockName,
                 });
-            } else if (!modtool.filterXmlBlocks(fileUri.fsPath)) {
+            } else if (!blocks.filterXmlBlocks(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected XML, found ${extname(fileUri.fsPath)}`);
             } else {
-                blockName = modtool.mapGrcBlocks('.xml')(fileUri.fsPath);
+                blockName = blocks.mapGrcBlocks('.xml')(fileUri.fsPath);
             }
             if (!blockName) {
                 const updateAll = await vscode.window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
@@ -480,13 +481,13 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             let blockName: string | undefined;
             let blockYamlPath = 'grc';
             if (!fileUri) {
-                const cppBlocks = modtool.getCppBlockImpl(this.cwd!);
+                const cppBlocks = blocks.getCppBlockImpl(this.cwd!);
                 if (cppBlocks.length === 0) {
                     return vscode.window.showInformationMessage('No C++ blocks found');
                 }
                 blockName = vscode.window.activeTextEditor?.document.fileName;
                 if (blockName) {
-                    blockName = modtool.mapCppBlockImpl(blockName);
+                    blockName = blocks.mapCppBlockImpl(blockName);
                     if (!cppBlocks.includes(blockName)) {
                         blockName = undefined;
                     }
@@ -500,10 +501,10 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
                 if (cppBlocks.includes(blockName)) {
                     blockYamlPath = join('grc', `${this.moduleName!}_${blockName}.block.yml`);
                 }
-            } else if (!modtool.filterCppBlockImpl(fileUri.fsPath)) {
+            } else if (!blocks.filterCppBlockImpl(fileUri.fsPath)) {
                 throw Error(`Invalid file type: expected C++ source, found ${basename(fileUri.fsPath)}`);
             } else {
-                blockName = modtool.mapCppBlockImpl(fileUri.fsPath);
+                blockName = blocks.mapCppBlockImpl(fileUri.fsPath);
             }
             if (!blockName) {
                 throw Error('No block name provided');
@@ -540,9 +541,9 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             const baseUri = vscode.Uri.file(this.cwd);
             return await modtool.getBlockFilesTree(element.label.toString(), baseUri, this.moduleName);
         } else {
-            const cppBlocks = modtool.getCppBlocks(this.cwd, this.moduleName);
-            const xmlBlocks = modtool.getXmlBlocks(this.cwd, this.moduleName);
-            return Array.from(modtool.getAllBlocks(this.cwd, this.moduleName))
+            const cppBlocks = blocks.getCppBlocks(this.cwd, this.moduleName);
+            const xmlBlocks = blocks.getXmlBlocks(this.cwd, this.moduleName);
+            return Array.from(blocks.getAllBlocks(this.cwd, this.moduleName))
                 .map((name) => {
                     let item = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.Collapsed);
                     item.contextValue = 'block';
