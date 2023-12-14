@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
+import { GNURadioModuleTreeDataProvider } from './moduleTree';
 
 export function activate(context: vscode.ExtensionContext) {
     const extId: string = context.extension.packageJSON.name;
@@ -129,22 +130,17 @@ export function activate(context: vscode.ExtensionContext) {
             ctl),
     );
 
-    const moduleView = vscode.window.createTreeView(
-        'gnuradioModule', {
-        treeDataProvider: ctl,
-        showCollapseAll: true,
-        canSelectMany: false,
-    });
+    const moduleTree = new GNURadioModuleTreeDataProvider(getWorkspaceDir, extId);
 
     const registerTreeItemAlias = (alias: string, command: string) =>
         vscode.commands.registerCommand(
             `${extId}.${alias}`,
             (item?: vscode.TreeItem) => {
                 if (!item) {
-                    if (!moduleView.selection.length) {
+                    if (!moduleTree.treeView.selection.length) {
                         return;
                     }
-                    item = moduleView.selection[0];
+                    item = moduleTree.treeView.selection[0];
                 }
                 if (!item.resourceUri) {
                     return;
@@ -155,10 +151,11 @@ export function activate(context: vscode.ExtensionContext) {
             });
 
     context.subscriptions.push(
+        moduleTree,
         vscode.commands.registerCommand(
             `${extId}.refreshView`,
-            ctl.refresh,
-            ctl),
+            moduleTree.refresh,
+            moduleTree),
         registerTreeItemAlias('fileOpenBeside', 'explorer.openToSide'),
         registerTreeItemAlias('fileOpenFolder', 'revealFileInOS'),
         registerTreeItemAlias('fileOpenWith', 'explorer.openWith'),
