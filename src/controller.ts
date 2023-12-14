@@ -625,12 +625,16 @@ export class GNURadioController implements vscode.TreeDataProvider<vscode.TreeIt
             return await modtool.getBlockFilesTree(element.label.toString(), baseUri, this.moduleName);
         } else {
             const cppBlocks = modtool.getCppBlocks(this.cwd, this.moduleName);
+            const xmlBlocks = modtool.getXmlBlocks(this.cwd, this.moduleName);
             return Array.from(modtool.getAllBlocks(this.cwd, this.moduleName))
                 .map((name) => {
                     let item = new vscode.TreeItem(name, vscode.TreeItemCollapsibleState.Collapsed);
                     item.contextValue = 'block';
                     if (cppBlocks.includes(name)) {
                         item.contextValue += '.cpp';
+                    }
+                    if (xmlBlocks.includes(name)) {
+                        item.contextValue += '.xml';
                     }
                     return item;
                 });

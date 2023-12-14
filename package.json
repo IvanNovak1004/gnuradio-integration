@@ -265,6 +265,11 @@
                     "group": "z_commands"
                 },
                 {
+                    "command": "gnuradio-integration.convertXmlToYaml",
+                    "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.xml/",
+                    "group": "z_commands"
+                },
+                {
                     "command": "gnuradio-integration.renameBlock",
                     "when": "view == gnuradioModule && viewItem =~ /^block/",
                     "group": "7_modification@1"
