@@ -1,21 +1,19 @@
 'use strict';
 
 import {
-    commands, window, workspace, Uri, FileType, EventEmitter,
+    window, workspace, Uri, FileType, EventEmitter,
     TreeDataProvider, TreeView, TreeItem, TreeItemCollapsibleState,
 } from 'vscode';
 import * as blocks from './blockFilter';
 import { extname } from 'path';
 
 export class GNURadioModuleTreeDataProvider implements TreeDataProvider<TreeItem> {
-    private readonly getInfoCommand: string;
     public readonly treeView: TreeView<TreeItem>;
 
     constructor(
-        private cwd: () => string | undefined,
-        extId: string,
+        private cwd: string,
+        private moduleName: string,
     ) {
-        this.getInfoCommand = extId + '.getModuleInfo';
         this.treeView = window.createTreeView(
             'gnuradioModule', {
             treeDataProvider: this,
@@ -40,27 +38,16 @@ export class GNURadioModuleTreeDataProvider implements TreeDataProvider<TreeItem
     }
 
     async getChildren(element?: TreeItem) {
-        const cwd = this.cwd();
-        if (!cwd) {
-            return [];
-        }
-        const moduleInfo: any = await commands.executeCommand(this.getInfoCommand, true);
-        if (!moduleInfo) {
-            window.showInformationMessage('No GNURadio Module detected in the workspace');
-            return [];
-        }
-        const moduleName: string = moduleInfo.modname;
         if (element) {
             if (!element.label) {
                 element.collapsibleState = TreeItemCollapsibleState.None;
                 return [];
             }
-            const baseUri = Uri.file(cwd);
-            return await getBlockFilesTree(element.label.toString(), baseUri, moduleName);
+            return await getBlockFilesTree(element.label.toString(), Uri.file(this.cwd), this.moduleName);
         } else {
-            const cppBlocks = blocks.getCppBlocks(cwd, moduleName);
-            const xmlBlocks = blocks.getXmlBlocks(cwd, moduleName);
-            return Array.from(blocks.getAllBlocks(cwd, moduleName))
+            const cppBlocks = blocks.getCppBlocks(this.cwd, this.moduleName);
+            const xmlBlocks = blocks.getXmlBlocks(this.cwd, this.moduleName);
+            return Array.from(blocks.getAllBlocks(this.cwd, this.moduleName))
                 .map((name) => {
                     let item = new TreeItem(name, TreeItemCollapsibleState.Collapsed);
                     item.contextValue = 'block';

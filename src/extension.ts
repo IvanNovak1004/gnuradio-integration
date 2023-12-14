@@ -4,14 +4,18 @@ import * as vscode from 'vscode';
 import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
 import { GNURadioModuleTreeDataProvider } from './moduleTree';
+import { getXmlBlocks } from './blockFilter';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     const extId: string = context.extension.packageJSON.name;
 
     const getConfig = <T>(key: string) => vscode.workspace.getConfiguration(extId).get<T>(key);
+    const setConfig = <T>(key: string, value?: T) => vscode.workspace.getConfiguration(extId)
+        .update(key, value, vscode.ConfigurationTarget.Global);
 
-    const getWorkspaceDir = () => vscode.workspace.workspaceFolders?.length === 1
-        ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined;
+    const cwd = vscode.workspace.workspaceFolders?.length
+        ? vscode.workspace.workspaceFolders[0].uri.fsPath
+        : undefined;
 
     /** 
      * Open GNURadio Companion application.
@@ -22,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
         `${extId}.openGnuradioCompanion`,
         () => {
             const cmd = getConfig<string>('companion.cmd') ?? 'gnuradio-companion';
-            exec(`"${cmd}"`, getWorkspaceDir());
+            exec(`"${cmd}"`, cwd);
         });
 
     /** 
@@ -61,24 +65,11 @@ export function activate(context: vscode.ExtensionContext) {
             execOnFile(`"${cmd}" -r`, fileUri, '.grc');
         });
 
-    const ctl = new GNURadioController(context);
-    ctl.setCwd(getWorkspaceDir());
-
     context.subscriptions.push(
         openGnuradioCompanion,
         editInGnuradioCompanion,
         compileFlowgraph,
         runFlowgraph,
-        ctl,
-        vscode.workspace.onDidChangeWorkspaceFolders(_ => {
-            ctl.setCwd(getWorkspaceDir());
-        }),
-        vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('gnuradio-integration.modtool.checkXml') &&
-                getConfig<boolean>('modtool.checkXml') === true) {
-                ctl.checkXml();
-            }
-        }),
         vscode.tasks.onDidEndTaskProcess(e => {
             if (e.execution.task.source !== 'gnuradio') {
                 return;
@@ -92,6 +83,13 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage('Flowgraph compilation was successfull');
             }
         }),
+    );
+
+    const ctl = new GNURadioController(context.extensionUri,
+        context.extension.packageJSON.displayName, cwd);
+
+    context.subscriptions.push(
+        ctl,
         vscode.commands.registerCommand(
             `${extId}.${ctl.createModule.name}`,
             ctl.createModule,
@@ -130,7 +128,56 @@ export function activate(context: vscode.ExtensionContext) {
             ctl),
     );
 
-    const moduleTree = new GNURadioModuleTreeDataProvider(getWorkspaceDir, extId);
+    if (!cwd) {
+        return;
+    }
+
+    // Detect OOT module in the current working directory
+    const moduleName: string = (await ctl.getModuleInfo(true))?.modname;
+    if (!moduleName) {
+        vscode.window.showInformationMessage('No GNURadio Module detected in the workspace');
+        return;
+    }
+    vscode.commands.executeCommand('setContext', `${extId}.moduleFound`, true);
+    ctl.moduleName = moduleName;
+
+    /**
+     * Check for old XML block definitions in the OOT module.
+     * 
+     * If any are found, asks if the user wants to update them to YAML.
+     */
+    const checkXml = async () => {
+        const xmlBlocks = getXmlBlocks(cwd, moduleName);
+        vscode.commands.executeCommand('setContext', `${extId}.xmlFound`, xmlBlocks.length > 0);
+        if (!xmlBlocks.length) {
+            return;
+        }
+        const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
+        let updateAll = await vscode.window.showInformationMessage(
+            'XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
+        if (updateAll === 'Yes') {
+            await ctl.execModtool('update', '--complete');
+            vscode.commands.executeCommand('setContext', `${extId}.xmlFound`, false);
+            updateAll = await vscode.window.showInformationMessage(
+                'Updated block definitions written to "grc/".', dontShowAgain);
+        }
+        if (updateAll === dontShowAgain) {
+            setConfig('checkXml', false);
+        }
+    };
+    if (getConfig<boolean>('modtool.checkXml') === true) {
+        checkXml();
+    }
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('gnuradio-integration.modtool.checkXml') &&
+                getConfig<boolean>('modtool.checkXml') === true) {
+                checkXml();
+            }
+        }),
+    );
+
+    const moduleTree = new GNURadioModuleTreeDataProvider(cwd, moduleName);
 
     const registerTreeItemAlias = (alias: string, command: string) =>
         vscode.commands.registerCommand(

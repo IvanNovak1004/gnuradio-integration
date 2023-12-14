@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { dirname, extname, basename, resolve, join } from 'path';
+import { extname, basename, resolve, join } from 'path';
 import { existsSync } from 'fs';
 import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
@@ -9,73 +9,25 @@ import * as blocks from './blockFilter';
 import { getBlockFilesTree } from './moduleTree';
 
 export class GNURadioController {
-    private readonly extId: string;
-    private readonly extRoot: vscode.Uri;
     private _outputChannel: vscode.OutputChannel;
-    private cwd?: string;
-    private moduleName?: string;
-
-    constructor(context: vscode.ExtensionContext) {
-        this.extId = context.extension.packageJSON.name;
-        this.extRoot = context.extensionUri;
-        this._outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
+    public moduleName?: string;
+    constructor(
+        private readonly extRoot: vscode.Uri,
+        displayName: string,
+        private cwd?: string,
+    ) {
+        this._outputChannel = vscode.window.createOutputChannel(displayName);
     }
 
     public dispose() {
         this._outputChannel.dispose();
     }
 
-    /**
-     * Set the current working directory and detect the module.
-     */
-    public async setCwd(cwd?: string) {
-        this.cwd = cwd;
-        this.moduleName = undefined;
-        let moduleFound = false;
-        const info = await this.getModuleInfo(true);
-        if (info) {
-            moduleFound = true;
-            this.moduleName = info['modname'];
-            // TODO: base_dir !== this.cwd
-            if (vscode.workspace.getConfiguration(this.extId).get('modtool.checkXml') === true) {
-                this.checkXml();
-            }
-        }
-        vscode.commands.executeCommand('setContext', `${this.extId}.moduleFound`, moduleFound);
-    }
-
-    /**
-     * Check for old XML block definitions in the OOT module.
-     * 
-     * If any are found, asks if the user wants to update them to YAML.
-     */
-    public async checkXml() {
-        const xmlFoundContextKey = `${this.extId}.xmlFound`;
-        if (!this.cwd) {
-            vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
-            return;
-        }
-        const xmlBlocks = blocks.getXmlBlocks(this.cwd!, this.moduleName!);
-        vscode.commands.executeCommand('setContext', xmlFoundContextKey, xmlBlocks.length > 0);
-        if (xmlBlocks.length > 0) {
-            const yes = vscode.l10n.t("Yes"), no = vscode.l10n.t("No"), dontShowAgain = vscode.l10n.t("Don't Show Again");
-            let updateAll = await vscode.window.showInformationMessage('XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
-            if (updateAll === 'Yes') {
-                await this.execModtool('update', '--complete');
-                vscode.commands.executeCommand('setContext', xmlFoundContextKey, false);
-                updateAll = await vscode.window.showInformationMessage('Block definitions written to "grc/".', dontShowAgain);
-            }
-            if (updateAll === dontShowAgain) {
-                vscode.workspace.getConfiguration(this.extId).update('checkXml', false, vscode.ConfigurationTarget.Global);
-            }
-        }
-    }
-
     private print(value: string) {
         this._outputChannel.appendLine(value);
     }
 
-    private async execModtool(command: 'add' | 'bind' | 'disable' | 'info' | 'makeyaml' | 'rename' | 'rm' | 'update', ...args: string[]): Promise<string[]> {
+    public async execModtool(command: 'add' | 'bind' | 'disable' | 'info' | 'makeyaml' | 'rename' | 'rm' | 'update', ...args: string[]): Promise<string[]> {
         this.print(`[Running] gr_modtool ${command} ${args.join(' ')}`);
         const output: string[] = await PythonShell.run(`${command}.py`, {
             scriptPath: resolve(this.extRoot.fsPath, 'src', 'modtool'),
