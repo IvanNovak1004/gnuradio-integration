@@ -41,40 +41,6 @@ export class GNURadioController {
     }
 
     /**
-     * Create a new OOT module project.
-     * 
-     * This command runs `gr_modtool newmod %name` in the shell, creating a new CMake project and opening the created folder. 
-     */
-    public async createModule() {
-        try {
-            const { newmodName, parentDir } = await modtool.createModule();
-            const newmodPath = resolve(parentDir, `gr-${newmodName}`);
-            if (existsSync(newmodPath)) {
-                throw Error('Directory already exists');
-            }
-            this.print(`[Running] gr_modtool newmod ${newmodName}`);
-            const output: string[] = await PythonShell.run('newmod.py', {
-                scriptPath: resolve(this.extRoot.fsPath, 'src', 'modtool'),
-                mode: 'text', encoding: 'utf8',
-                stderrParser: data => this.print(data),
-                cwd: parentDir,
-                args: [newmodName],
-            });
-            for (const line of output) {
-                this.print(line);
-            }
-            this.print('');
-            if (await vscode.window.showInformationMessage(`New GNURadio module "${newmodName}" created in ${newmodPath}.`, 'Open Directory') === 'Open Directory') {
-                vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(newmodPath));
-            }
-        } catch (err) {
-            if (err instanceof Error) {
-                vscode.window.showErrorMessage(err.message);
-            }
-        }
-    }
-
-    /**
      * Query information about the OOT module.
      * 
      * This command runs `gr_modtool info` in the shell and returns a JSON map.

@@ -5,6 +5,7 @@ import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
 import { GNURadioModuleTreeDataProvider } from './moduleTree';
 import { getXmlBlocks } from './blockFilter';
+import * as modtool from './modtool';
 
 export async function activate(context: vscode.ExtensionContext) {
     const extId: string = context.extension.packageJSON.name;
@@ -85,15 +86,17 @@ export async function activate(context: vscode.ExtensionContext) {
         }),
     );
 
+    const outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
+    const scriptPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
+
     const ctl = new GNURadioController(context.extensionUri,
         context.extension.packageJSON.displayName, cwd);
 
     context.subscriptions.push(
         ctl,
         vscode.commands.registerCommand(
-            `${extId}.${ctl.createModule.name}`,
-            ctl.createModule,
-            ctl),
+            `${extId}.createModule`,
+            () => modtool.createModule(outputChannel, scriptPath)),
         vscode.commands.registerCommand(
             `${extId}.${ctl.getModuleInfo.name}`,
             ctl.getModuleInfo,

@@ -1,11 +1,14 @@
 'use strict';
 
 import {
-    window, workspace, Uri, ThemeIcon,
+    commands, window, workspace,
+    Uri, ThemeIcon, OutputChannel,
     InputBoxValidationSeverity, QuickPickItem
 } from 'vscode';
 import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
+import { existsSync } from 'fs';
+import { PythonShell } from 'python-shell';
 
 export function validateBlockName(existingBlocks: Set<string>) {
     return (value: string) => {
@@ -38,49 +41,73 @@ export function validateBlockName(existingBlocks: Set<string>) {
     };
 }
 
-export async function createModule() {
-    const newmodName = await window.showInputBox({
-        title: 'GNURadio: New OOT Module',
-        placeHolder: 'Enter Module Name...',
-        validateInput(value) {
-            let name = value.trim();
-            if (!name.length) {
-                return {
-                    message: 'Name cannot be empty',
-                    severity: InputBoxValidationSeverity.Error,
-                };
-            }
-            if (!/^([\w,\_,\-,\.]+)$/.test(name)) {
-                return {
-                    message: 'Name can only contain ASCII letters, digits, and the characters . - _',
-                    severity: InputBoxValidationSeverity.Error,
-                };
-            }
-            if (name.length < 3) {
-                return {
-                    message: 'Descriptive names usually contain at least 3 symbols',
-                    severity: InputBoxValidationSeverity.Warning,
-                    then: null,
-                };
-            }
-        },
-    });
-    if (!newmodName) {
-        throw Error('No valid name provided');
+/**
+ * Create a new OOT module project.
+ * 
+ * This command runs `gr_modtool newmod %name` in the shell, creating a new CMake project and opening the created folder. 
+ */
+export async function createModule(outputChannel: OutputChannel, scriptPath: string) {
+    try {
+        const newmodName = await window.showInputBox({
+            title: 'GNURadio: New OOT Module',
+            placeHolder: 'Enter Module Name...',
+            validateInput(value) {
+                let name = value.trim();
+                if (!name.length) {
+                    return {
+                        message: 'Name cannot be empty',
+                        severity: InputBoxValidationSeverity.Error,
+                    };
+                }
+                if (!/^([\w,\_,\-,\.]+)$/.test(name)) {
+                    return {
+                        message: 'Name can only contain ASCII letters, digits, and the characters . - _',
+                        severity: InputBoxValidationSeverity.Error,
+                    };
+                }
+                if (name.length < 3) {
+                    return {
+                        message: 'Descriptive names usually contain at least 3 symbols',
+                        severity: InputBoxValidationSeverity.Warning,
+                        then: null,
+                    };
+                }
+            },
+        });
+        if (!newmodName) {
+            throw Error('No valid name provided');
+        }
+        const parentDir = await window.showOpenDialog({
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false,
+            title: 'Create module in directory'
+        }).then(
+            (value) => value && value.length ? value[0] : undefined,
+            () => undefined,
+        );
+        if (!parentDir) {
+            throw Error('No directory provided');
+        }
+        const newmodPath = Uri.joinPath(parentDir, `gr-${newmodName}`).fsPath;
+        if (existsSync(newmodPath)) {
+            throw Error('Directory already exists');
+        }
+        outputChannel.appendLine(`\n[Running] gr_modtool newmod ${newmodName}`);
+        await PythonShell.run('newmod.py', {
+            scriptPath, mode: 'text', encoding: 'utf8',
+            parser: data => { outputChannel.appendLine(data); return data; },
+            stderrParser: data => { outputChannel.appendLine(data); return data; },
+            cwd: parentDir.fsPath, args: [newmodName],
+        });
+        if (await window.showInformationMessage(`New GNURadio module "${newmodName}" created in ${newmodPath}.`, 'Open Directory') === 'Open Directory') {
+            commands.executeCommand('vscode.openFolder', Uri.file(newmodPath));
+        }
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
     }
-    const parentDir = await window.showOpenDialog({
-        canSelectFiles: false,
-        canSelectFolders: true,
-        canSelectMany: false,
-        title: 'Create module in directory'
-    }).then(
-        (value) => value && value.length ? value[0].fsPath : undefined,
-        () => undefined,
-    );
-    if (!parentDir) {
-        throw Error('No directory provided');
-    }
-    return { newmodName, parentDir };
 }
 
 export async function createBlock(extRoot: Uri, existingBlocks: Set<string>) {
