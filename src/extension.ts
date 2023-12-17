@@ -127,9 +127,8 @@ export async function activate(context: vscode.ExtensionContext) {
             `${extId}.getModuleInfo`,
             () => modtool.getModuleInfo(execModtool)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.createBlock.name}`,
-            ctl.createBlock,
-            ctl),
+            `${extId}.createBlock`,
+            () => modtool.createBlock(execModtool, context.extensionUri, cwd, moduleName)),
         vscode.commands.registerCommand(
             `${extId}.${ctl.createPythonBindings.name}`,
             ctl.createPythonBindings,

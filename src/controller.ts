@@ -41,48 +41,6 @@ export class GNURadioController {
     }
 
     /**
-     * Create a new block in the OOT module.
-     * 
-     * This command runs `gr_modtool add` in the shell, creating source files and including them into CMakeLists.
-     * 
-     * TODO: Create an HTML form instead of a multi-step input box
-     */
-    public async createBlock() {
-        try {
-            const existingBlocks = blocks.getAllBlocks(this.cwd!, this.moduleName!);
-            const state = await modtool.createBlock(this.extRoot, existingBlocks);
-            if (!state) {
-                return;
-            }
-            let args = [
-                state.name!,
-                '--block-type',
-                state.blockType!.label,
-                '--lang',
-                state.language!.description!,
-            ];
-            if (state.copyright) {
-                args.push('--copyright', state.copyright);
-            }
-            if (state.addCppTest) {
-                args.push('--add-cpp-qa');
-            }
-            if (state.addPythonTest) {
-                args.push('--add-python-qa');
-            }
-            await this.execModtool('add', ...args);
-            const blockPath = state.language!.description === 'python'
-                ? resolve(this.cwd!, 'python', this.moduleName!, `${state.name}.py`)
-                : resolve(this.cwd!, 'include', 'gnuradio', this.moduleName!, `${state.name}.h`);
-            vscode.commands.executeCommand('vscode.open', vscode.Uri.file(blockPath));
-        } catch (err) {
-            if (err instanceof Error) {
-                vscode.window.showErrorMessage(err.message);
-            }
-        }
-    }
-
-    /**
      * Create Python bindings for the block.
      * 
      * This command runs `gr_modtool bind %f` in the shell, generating pybind11 code based on the block's C++ header.

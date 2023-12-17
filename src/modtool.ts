@@ -140,151 +140,190 @@ export async function getModuleInfo(execModtool: ModtoolClosure, json: boolean =
     }
 }
 
-export async function createBlock(extRoot: Uri, existingBlocks: Set<string>) {
-    interface State {
-        title: string;
-        step: number;
-        totalSteps: number;
-        copyright?: string;
-        name?: string;
-        blockType?: QuickPickItem;
-        language?: QuickPickItem;
-        addCppTest?: boolean;
-        addPythonTest?: boolean;
-        finished: boolean;
-    }
+/**
+ * Create a new block in the OOT module.
+ * 
+ * This command runs `gr_modtool add` in the shell, creating source files and including them into CMakeLists.
+ * 
+ * TODO: Create an HTML form instead of a multi-step input box
+ */
+export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd: string, moduleName: string) {
+    try {
+        const existingBlocks = blocks.getAllBlocks(cwd, moduleName);
 
-    async function inputAuthor(input: MultiStepInput, state: State) {
-        // TODO: Remember current value when navigating back.
-        state.copyright = await input.showInputBox({
-            title: state.title,
-            step: 1,
-            totalSteps: state.totalSteps,
-            value: state.copyright || '',
-            prompt: 'Please specify the copyright holder',
-        });
-        return (input: MultiStepInput) => inputName(input, state);
-    }
+        interface State {
+            title: string;
+            step: number;
+            totalSteps: number;
+            copyright?: string;
+            name?: string;
+            blockType?: QuickPickItem;
+            language?: QuickPickItem;
+            addCppTest?: boolean;
+            addPythonTest?: boolean;
+            finished: boolean;
+        }
 
-    async function inputName(input: MultiStepInput, state: State) {
-        // TODO: Remember current value when navigating back.
-        state.name = await input.showInputBox({
-            title: state.title,
-            step: 2,
-            totalSteps: state.totalSteps,
-            value: state.name || '',
-            prompt: 'Choose a unique name for the block',
-            validateInput: validateBlockName(existingBlocks),
-        });
-        return (input: MultiStepInput) => pickBlockType(input, state);
-    }
-
-    async function pickBlockType(input: MultiStepInput, state: State) {
-        const pick = await input.showQuickPick(
-            [
-                { label: 'general', description: 'gr::block', detail: 'General-purpose block type' },
-                { label: 'sync', description: 'gr::sync_block', detail: 'Block with synchronous 1:1 input-to-output' },
-                { label: 'decimator', description: 'gr::sync_decimator', detail: 'Block with synchronous N:1 input-to-output' },
-                { label: 'interpolator', description: 'gr::sync_interpolator', detail: 'Block with synchronous N:1 input-to-output' },
-                { label: 'source', description: 'gr::sync_block', detail: 'Source block with outputs, but no stream inputs' },
-                { label: 'sink', description: 'gr::sync_block', detail: 'Sink block with inputs, but no stream outputs' },
-                { label: 'tagged_stream', description: 'gr::tagged_stream_block', detail: 'Block with input-to-output flow controlled by input stream tags (e.g. packetized streams)' },
-                { label: 'hier', description: 'gr::hier_block2', detail: 'Hierarchical container block for other blocks; usually can be described by a flowgraph' },
-                { label: 'noblock', detail: 'C++ or Python class' },
-            ],
-            {
+        async function inputAuthor(input: MultiStepInput, state: State) {
+            // TODO: Remember current value when navigating back.
+            state.copyright = await input.showInputBox({
                 title: state.title,
-                step: 3,
+                step: 1,
                 totalSteps: state.totalSteps,
-                placeHolder: 'Pick block type',
-                activeItem: state.blockType,
-            }
-        );
-        state.blockType = pick[0];
-        state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
-        return (input: MultiStepInput) => pickLanguage(input, state);
-    }
+                value: state.copyright || '',
+                prompt: 'Please specify the copyright holder',
+            });
+            return (input: MultiStepInput) => inputName(input, state);
+        }
 
-    async function pickLanguage(input: MultiStepInput, state: State) {
-        const pick = await input.showQuickPick(
-            [
+        async function inputName(input: MultiStepInput, state: State) {
+            // TODO: Remember current value when navigating back.
+            state.name = await input.showInputBox({
+                title: state.title,
+                step: 2,
+                totalSteps: state.totalSteps,
+                value: state.name || '',
+                prompt: 'Choose a unique name for the block',
+                validateInput: validateBlockName(existingBlocks),
+            });
+            return (input: MultiStepInput) => pickBlockType(input, state);
+        }
+
+        async function pickBlockType(input: MultiStepInput, state: State) {
+            const pick = await input.showQuickPick(
+                [
+                    { label: 'general', description: 'gr::block', detail: 'General-purpose block type' },
+                    { label: 'sync', description: 'gr::sync_block', detail: 'Block with synchronous 1:1 input-to-output' },
+                    { label: 'decimator', description: 'gr::sync_decimator', detail: 'Block with synchronous N:1 input-to-output' },
+                    { label: 'interpolator', description: 'gr::sync_interpolator', detail: 'Block with synchronous N:1 input-to-output' },
+                    { label: 'source', description: 'gr::sync_block', detail: 'Source block with outputs, but no stream inputs' },
+                    { label: 'sink', description: 'gr::sync_block', detail: 'Sink block with inputs, but no stream outputs' },
+                    { label: 'tagged_stream', description: 'gr::tagged_stream_block', detail: 'Block with input-to-output flow controlled by input stream tags (e.g. packetized streams)' },
+                    { label: 'hier', description: 'gr::hier_block2', detail: 'Hierarchical container block for other blocks; usually can be described by a flowgraph' },
+                    { label: 'noblock', detail: 'C++ or Python class' },
+                ],
                 {
+                    title: state.title,
+                    step: 3,
+                    totalSteps: state.totalSteps,
+                    placeHolder: 'Pick block type',
+                    activeItem: state.blockType,
+                }
+            );
+            state.blockType = pick[0];
+            state.totalSteps = state.blockType.label === 'noblock' ? 4 : 5;
+            return (input: MultiStepInput) => pickLanguage(input, state);
+        }
+
+        async function pickLanguage(input: MultiStepInput, state: State) {
+            const pick = await input.showQuickPick(
+                [
+                    {
+                        label: 'Python',
+                        description: 'python',
+                        iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
+                    },
+                    {
+                        label: 'C++',
+                        description: 'cpp',
+                        iconPath: Uri.joinPath(extRoot, 'media', 'file_type_cpp3.svg')
+                    },
+                ],
+                {
+                    title: state.title,
+                    step: 4,
+                    totalSteps: state.totalSteps,
+                    placeHolder: 'Pick implementation language',
+                    activeItem: state.language,
+                }
+            );
+            state.language = pick[0];
+            if (state.blockType?.label === 'noblock' && state.language?.description === 'python') {
+                state.finished = true;
+                return;
+            }
+            return (input: MultiStepInput) => pickTests(input, state);
+        }
+
+        async function pickTests(input: MultiStepInput, state: State) {
+            let testLanguages: QuickPickItem[] = [];
+            if (state.blockType?.label !== 'noblock') {
+                testLanguages.push({
                     label: 'Python',
                     description: 'python',
                     iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
-                },
-                {
+                });
+            }
+            if (state.language?.label.includes('C++')) {
+                testLanguages.push({
                     label: 'C++',
                     description: 'cpp',
                     iconPath: Uri.joinPath(extRoot, 'media', 'file_type_cpp3.svg')
-                },
-            ],
-            {
-                title: state.title,
-                step: 4,
-                totalSteps: state.totalSteps,
-                placeHolder: 'Pick implementation language',
-                activeItem: state.language,
+                });
             }
-        );
-        state.language = pick[0];
-        if (state.blockType?.label === 'noblock' && state.language?.description === 'python') {
+            const picks = await input.showQuickPick(
+                testLanguages, {
+                title: state.title,
+                step: 5,
+                totalSteps: state.totalSteps,
+                placeHolder: 'Add QA code',
+                canPickMany: true,
+            });
+            for (var pick of picks) {
+                if (pick.description === 'cpp') {
+                    state.addCppTest = true;
+                } else if (pick.description === 'python') {
+                    state.addPythonTest = true;
+                }
+            }
             state.finished = true;
+        }
+
+        // TODO: Arguments?
+
+        let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 5, finished: false };
+        try {
+            const gitPath = workspace.getConfiguration('git').get<string | string[]>('path');
+            const gitCmd = gitPath
+                ? Array.isArray(gitPath)
+                    ? gitPath.length > 0 ? gitPath[0] : undefined
+                    : gitPath
+                : undefined;
+            state.copyright = execSync(`${gitCmd ?? 'git'} config user.name`, { encoding: 'utf8' });
+        }
+        catch (_) { }
+
+        await MultiStepInput.run(input => inputAuthor(input, state));
+        if (!state.finished) {
             return;
         }
-        return (input: MultiStepInput) => pickTests(input, state);
-    }
 
-    async function pickTests(input: MultiStepInput, state: State) {
-        let testLanguages: QuickPickItem[] = [];
-        if (state.blockType?.label !== 'noblock') {
-            testLanguages.push({
-                label: 'Python',
-                description: 'python',
-                iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
-            });
+        let args = [
+            state.name!,
+            '--block-type',
+            state.blockType!.label,
+            '--lang',
+            state.language!.description!,
+        ];
+        if (state.copyright) {
+            args.push('--copyright', state.copyright);
         }
-        if (state.language?.label.includes('C++')) {
-            testLanguages.push({
-                label: 'C++',
-                description: 'cpp',
-                iconPath: Uri.joinPath(extRoot, 'media', 'file_type_cpp3.svg')
-            });
+        if (state.addCppTest) {
+            args.push('--add-cpp-qa');
         }
-        const picks = await input.showQuickPick(
-            testLanguages, {
-            title: state.title,
-            step: 5,
-            totalSteps: state.totalSteps,
-            placeHolder: 'Add QA code',
-            canPickMany: true,
-        });
-        for (var pick of picks) {
-            if (pick.description === 'cpp') {
-                state.addCppTest = true;
-            } else if (pick.description === 'python') {
-                state.addPythonTest = true;
-            }
+        if (state.addPythonTest) {
+            args.push('--add-python-qa');
         }
-        state.finished = true;
+        await execModtool('add', ...args);
+        const blockPath = state.language!.description === 'python'
+            ? resolve(cwd, 'python', moduleName, `${state.name}.py`)
+            : resolve(cwd, 'include', 'gnuradio', moduleName, `${state.name}.h`);
+        commands.executeCommand('vscode.open', Uri.file(blockPath));
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
     }
-
-    // TODO: Arguments?
-
-    let state = <State>{ title: 'GNURadio: Create Block', totalSteps: 5, finished: false };
-    try {
-        const gitPath = workspace.getConfiguration('git').get<string | string[]>('path');
-        const gitCmd = gitPath
-            ? Array.isArray(gitPath)
-                ? gitPath.length > 0 ? gitPath[0] : undefined
-                : gitPath
-            : undefined;
-        state.copyright = execSync(`${gitCmd ?? 'git'} config user.name`, { encoding: 'utf8' });
-    }
-    catch (_) { }
-
-    await MultiStepInput.run(input => inputAuthor(input, state));
-    return state.finished ? state : undefined;
 }
 
 export function quickPick(
