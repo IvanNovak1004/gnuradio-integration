@@ -9,6 +9,10 @@ import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { PythonShell } from 'python-shell';
+import * as blocks from './blockFilter';
+import { resolve } from 'path';
+
+export type ModtoolClosure = (command: string, ...args: string[]) => Promise<any[]>;
 
 export function validateBlockName(existingBlocks: Set<string>) {
     return (value: string) => {
@@ -103,6 +107,32 @@ export async function createModule(outputChannel: OutputChannel, scriptPath: str
         if (await window.showInformationMessage(`New GNURadio module "${newmodName}" created in ${newmodPath}.`, 'Open Directory') === 'Open Directory') {
             commands.executeCommand('vscode.openFolder', Uri.file(newmodPath));
         }
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Query information about the OOT module.
+ * 
+ * This command runs `gr_modtool info` in the shell and returns a JSON map.
+ */
+export async function getModuleInfo(execModtool: ModtoolClosure, json: boolean = false) {
+    try {
+        const moduleInfoStr = (json
+            ? await execModtool('info', '--python-readable')
+            : await execModtool('info'))
+            .map(line => line.trim()).join('\n');
+        if (json) {
+            return JSON.parse(moduleInfoStr.replace(/\'/g, '"'));
+        }
+        await window.showInformationMessage(
+            'GNURadio Module Info', {
+            modal: true,
+            detail: moduleInfoStr,
+        });
     } catch (err) {
         if (err instanceof Error) {
             window.showErrorMessage(err.message);

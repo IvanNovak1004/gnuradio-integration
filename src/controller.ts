@@ -41,35 +41,6 @@ export class GNURadioController {
     }
 
     /**
-     * Query information about the OOT module.
-     * 
-     * This command runs `gr_modtool info` in the shell and returns a JSON map.
-     */
-    public async getModuleInfo(json: boolean = false) {
-        try {
-            if (!this.cwd) {
-                throw Error("No module detected in the open workspace");
-            }
-            const moduleInfoStr = (json
-                ? await this.execModtool('info', '--python-readable')
-                : await this.execModtool('info'))
-                .map(line => line.trim()).join('\n');
-            if (json) {
-                return JSON.parse(moduleInfoStr.replace(/\'/g, '"'));
-            }
-            await vscode.window.showInformationMessage(
-                'GNURadio Module Info', {
-                modal: true,
-                detail: moduleInfoStr,
-            });
-        } catch (err) {
-            if (err instanceof Error) {
-                vscode.window.showErrorMessage(err.message);
-            }
-        }
-    }
-
-    /**
      * Create a new block in the OOT module.
      * 
      * This command runs `gr_modtool add` in the shell, creating source files and including them into CMakeLists.

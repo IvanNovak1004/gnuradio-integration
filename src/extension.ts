@@ -5,6 +5,7 @@ import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
 import { GNURadioModuleTreeDataProvider } from './moduleTree';
 import { getXmlBlocks } from './blockFilter';
+import { PythonShell } from 'python-shell';
 import * as modtool from './modtool';
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -88,6 +89,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const outputChannel = vscode.window.createOutputChannel(context.extension.packageJSON.displayName);
     const scriptPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
+    const execModtool: modtool.ModtoolClosure = async (command: string, ...args: string[]) => {
+        outputChannel.appendLine(`\n[Running] gr_modtool ${command} ${args.join(' ')}`);
+        return PythonShell.run(
+            `${command}.py`, {
+            parser(data) { outputChannel.appendLine(data); return data; },
+            stderrParser(data) { outputChannel.appendLine(data); return data; },
+            mode: 'text', encoding: 'utf8', scriptPath, cwd, args,
+        });
+    };
 
     const ctl = new GNURadioController(context.extensionUri,
         context.extension.packageJSON.displayName, cwd);
@@ -97,10 +107,25 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand(
             `${extId}.createModule`,
             () => modtool.createModule(outputChannel, scriptPath)),
+    );
+
+    if (!cwd) {
+        return;
+    }
+    // Detect OOT module in the current working directory
+    const moduleName: string = (await modtool.getModuleInfo(execModtool, true))?.modname;
+    if (!moduleName) {
+        const noModule = () => vscode.window.showErrorMessage("No GNURadio Module detected in the open workspace");
+        context.subscriptions.push(vscode.commands.registerCommand(`${extId}.getModuleInfo`, noModule));
+        return;
+    }
+    vscode.commands.executeCommand('setContext', `${extId}.moduleFound`, true);
+    ctl.moduleName = moduleName;
+
+    context.subscriptions.push(
         vscode.commands.registerCommand(
-            `${extId}.${ctl.getModuleInfo.name}`,
-            ctl.getModuleInfo,
-            ctl),
+            `${extId}.getModuleInfo`,
+            () => modtool.getModuleInfo(execModtool)),
         vscode.commands.registerCommand(
             `${extId}.${ctl.createBlock.name}`,
             ctl.createBlock,
@@ -130,19 +155,6 @@ export async function activate(context: vscode.ExtensionContext) {
             ctl.makeYamlFromImpl,
             ctl),
     );
-
-    if (!cwd) {
-        return;
-    }
-
-    // Detect OOT module in the current working directory
-    const moduleName: string = (await ctl.getModuleInfo(true))?.modname;
-    if (!moduleName) {
-        vscode.window.showInformationMessage('No GNURadio Module detected in the workspace');
-        return;
-    }
-    vscode.commands.executeCommand('setContext', `${extId}.moduleFound`, true);
-    ctl.moduleName = moduleName;
 
     /**
      * Check for old XML block definitions in the OOT module.
