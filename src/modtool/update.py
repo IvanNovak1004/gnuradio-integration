@@ -17,15 +17,15 @@ from gnuradio.modtool.core import ModToolUpdate, ModToolException
 from argparse import ArgumentParser
 
 argparser = ArgumentParser("gr_modtool update")
-argparser.add_argument("blockname", type=str, default=None)
+argparser.add_argument("blockname", type=str, nargs="?", default=None)
 argparser.add_argument("--complete", action="store_true")
 args = argparser.parse_args()
 
 try:
     tool = ModToolUpdate(args.blockname, complete=args.complete)
-    if not tool.info["complete"] and (
-        not tool.info["pattern"] or tool.info["pattern"].isspace()
-    ):
+    if args.complete is True:
+        print("Complete update selected; block pattern is ignored.", file=stderr)
+    elif args.blockname is None:
         raise ModToolException("Block name not specified!")
     tool.run()
 except ModToolException as e:
