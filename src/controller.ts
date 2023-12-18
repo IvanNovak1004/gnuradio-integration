@@ -41,65 +41,6 @@ export class GNURadioController {
     }
 
     /**
-     * Create Python bindings for the block.
-     * 
-     * This command runs `gr_modtool bind %f` in the shell, generating pybind11 code based on the block's C++ header.
-     */
-    public async createPythonBindings(block?: vscode.Uri | vscode.TreeItem) {
-        try {
-            let blockName: string | undefined;
-            const existingBlocks = blocks.getCppBlocks(this.cwd!, this.moduleName!);
-            if (block instanceof vscode.TreeItem) {
-                blockName = typeof block.label === 'object'
-                    ? block.label.label
-                    : block.label;
-                if (!blockName) {
-                    // TODO: Sanity check?
-                    return;
-                }
-            } else if (block instanceof vscode.Uri) {
-                if (!blocks.filterCppBlocks(block.fsPath)) {
-                    throw Error(`Invalid file type: expected a header (.h), found ${basename(block.fsPath)}`);
-                }
-                blockName = blocks.mapCppBlocks(block.fsPath);
-            } else {
-                blockName = vscode.window.activeTextEditor?.document.fileName;
-                if (blockName) {
-                    blockName = blocks.mapCppBlocks(blockName);
-                    if (!existingBlocks.includes(blockName)) {
-                        blockName = undefined;
-                    }
-                }
-                blockName = await modtool.quickPickWithRegex(
-                    existingBlocks, {
-                    title: 'GNURadio: Python Bindings',
-                    placeholder: 'Enter block name or regular expression...',
-                    value: blockName,
-                });
-                if (!blockName) {
-                    return;
-                }
-            }
-            let successMessage: string;
-            if (existingBlocks.includes(blockName)) {
-                const blockBindPath = join('python', this.moduleName!, 'bindings', `${blockName}_python.cc`);
-                successMessage = `Python bindings written to "${blockBindPath}"`;
-            } else {
-                const re = RegExp(blockName);
-                const matchingBlocks = existingBlocks.filter(block => re.test(block));
-                successMessage = 'Python bindings created for blocks: ', matchingBlocks.join(', ');
-            }
-            await this.execModtool('bind', blockName);
-            // TODO: check for failed conversions
-            vscode.window.showInformationMessage(successMessage);
-        } catch (err) {
-            if (err instanceof Error) {
-                vscode.window.showErrorMessage(err.message);
-            }
-        }
-    }
-
-    /**
      * Disable the block.
      * 
      * This command runs `gr_modtool disable %f`, commenting out all related lines in CMakeLists.

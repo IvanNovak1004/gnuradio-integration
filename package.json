@@ -89,7 +89,22 @@
                 "category": "GNURadio Module"
             },
             {
+                "command": "gnuradio-integration.createPythonBindingsInExplorer",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.convertXmlToYamlInExplorer",
+                "title": "Convert XML to YAML",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createPythonBindingsInTree",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.convertXmlToYamlInTree",
                 "title": "Convert XML to YAML",
                 "category": "GNURadio Module"
             },
@@ -158,7 +173,7 @@
                     "group": "gnuradio-integration"
                 },
                 {
-                    "command": "gnuradio-integration.createPythonBindings",
+                    "command": "gnuradio-integration.createPythonBindingsInExplorer",
                     "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\/]gnuradio[\\\\\\/]/ && resourceFilename != api.h",
                     "group": "gnuradio-integration"
                 },
@@ -202,7 +217,19 @@
                     "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
                 },
                 {
+                    "command": "gnuradio-integration.createPythonBindingsInExplorer",
+                    "when": "false"
+                },
+                {
                     "command": "gnuradio-integration.convertXmlToYamlInExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindingsInTree",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYamlInTree",
                     "when": "false"
                 },
                 {
@@ -269,12 +296,12 @@
             ],
             "view/item/context": [
                 {
-                    "command": "gnuradio-integration.createPythonBindings",
+                    "command": "gnuradio-integration.createPythonBindingsInTree",
                     "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.cpp/",
                     "group": "z_commands"
                 },
                 {
-                    "command": "gnuradio-integration.convertXmlToYaml",
+                    "command": "gnuradio-integration.convertXmlToYamlInTree",
                     "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.xml/",
                     "group": "z_commands"
                 },

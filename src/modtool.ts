@@ -327,6 +327,54 @@ export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd
 }
 
 /**
+ * Create Python bindings for the block.
+ * 
+ * This command runs `gr_modtool bind %f` in the shell, generating pybind11 code based on the block's C++ header.
+ */
+export async function createPythonBindings(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const cppBlocks = blocks.getCppBlocks(cwd, moduleName);
+        if (cppBlocks.length === 0) {
+            return window.showInformationMessage('No C++ headers found');
+        }
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.mapCppBlocks(blockName);
+                if (!cppBlocks.includes(blockName)) {
+                    blockName = undefined;
+                }
+            }
+            blockName = await quickPickWithRegex(
+                cppBlocks, {
+                title: 'GNURadio: Python Bindings',
+                placeholder: 'Enter block name or regular expression...',
+                value: blockName,
+            });
+            if (!blockName) {
+                return;
+            }
+        }
+        let successMessage: string;
+        if (cppBlocks.includes(blockName)) {
+            const blockBindPath = join('python', moduleName, 'bindings', `${blockName}_python.cc`);
+            successMessage = `Python bindings written to "${blockBindPath}"`;
+        } else {
+            const re = RegExp(blockName);
+            const matchingBlocks = cppBlocks.filter(block => re.test(block));
+            successMessage = 'Python bindings created for blocks: ', matchingBlocks.join(', ');
+        }
+        await execModtool('bind', blockName);
+        // TODO: check for failed conversions
+        window.showInformationMessage(successMessage);
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
  * Convert old XML block definitions to YAML.
  * 
  * This command runs `gr_modtool update %f`, generating a new YAML definition and deleting the old XML.

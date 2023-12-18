@@ -132,9 +132,8 @@ export async function activate(context: vscode.ExtensionContext) {
             `${extId}.createBlock`,
             () => modtool.createBlock(execModtool, context.extensionUri, cwd, moduleName)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.createPythonBindings.name}`,
-            ctl.createPythonBindings,
-            ctl),
+            `${extId}.createPythonBindings`,
+            () => modtool.createPythonBindings(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
             `${extId}.${ctl.renameBlock.name}`,
             ctl.renameBlock,
@@ -157,6 +156,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // File Explorer Context Menu
     context.subscriptions.push(
+        vscode.commands.registerCommand(
+            `${extId}.createPythonBindingsInExplorer`,
+            (blockUri: vscode.Uri) => {
+                if (!blockUri) {
+                    vscode.window.showErrorMessage('No file provided!');
+                    return;
+                }
+                if (!blocks.filterCppBlocks(blockUri.fsPath)) {
+                    vscode.window.showErrorMessage(`Invalid file type: expected a header (.h), found ${basename(blockUri.fsPath)}`);
+                }
+                const blockName = blocks.mapCppBlocks(blockUri.fsPath);
+                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName);
+            }),
         vscode.commands.registerCommand(
             `${extId}.convertXmlToYamlInExplorer`,
             (blockUri: vscode.Uri) => {
@@ -239,12 +251,34 @@ export async function activate(context: vscode.ExtensionContext) {
                 );
             });
 
+    const getBlockFromTreeItem = (item?: vscode.TreeItem) => {
+        if (!item && moduleTree.treeView.selection.length) {
+            item = moduleTree.treeView.selection[0];
+        }
+        if (!item || !item.contextValue?.startsWith('block')) {
+            return;
+        }
+        return typeof item.label === 'object' ? item.label.label : item.label;
+    };
+
     context.subscriptions.push(
         moduleTree,
         vscode.commands.registerCommand(
             `${extId}.refreshView`,
             moduleTree.refresh,
             moduleTree),
+        vscode.commands.registerCommand(
+            `${extId}.createPythonBindingsInTree`,
+            (item?: vscode.TreeItem) => {
+                const blockName = getBlockFromTreeItem(item);
+                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName);
+            }),
+        vscode.commands.registerCommand(
+            `${extId}.convertXmlToYamlInTree`,
+            (item?: vscode.TreeItem) => {
+                const blockName = getBlockFromTreeItem(item);
+                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName);
+            }),
         registerTreeItemAlias('fileOpenBeside', 'explorer.openToSide'),
         registerTreeItemAlias('fileOpenFolder', 'revealFileInOS'),
         registerTreeItemAlias('fileOpenWith', 'explorer.openWith'),
