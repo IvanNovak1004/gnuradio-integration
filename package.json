@@ -99,6 +99,16 @@
                 "category": "GNURadio Module"
             },
             {
+                "command": "gnuradio-integration.renameBlockInTree",
+                "title": "Rename Block",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.removeBlockInTree",
+                "title": "Remove Block",
+                "category": "GNURadio Module"
+            },
+            {
                 "command": "gnuradio-integration.createPythonBindingsInTree",
                 "title": "Create Python Bindings",
                 "category": "GNURadio Module"
@@ -225,6 +235,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "gnuradio-integration.renameBlock",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlock",
+                    "when": "false"
+                },
+                {
                     "command": "gnuradio-integration.createPythonBindingsInTree",
                     "when": "false"
                 },
@@ -306,12 +324,12 @@
                     "group": "z_commands"
                 },
                 {
-                    "command": "gnuradio-integration.renameBlock",
+                    "command": "gnuradio-integration.renameBlockInTree",
                     "when": "view == gnuradioModule && viewItem =~ /^block/",
                     "group": "7_modification@1"
                 },
                 {
-                    "command": "gnuradio-integration.removeBlock",
+                    "command": "gnuradio-integration.removeBlockInTree",
                     "when": "view == gnuradioModule && viewItem =~ /^block/",
                     "group": "7_modification@2"
                 },
@@ -360,12 +378,12 @@
         "keybindings": [
             {
                 "key": "f2",
-                "command": "gnuradio-integration.renameBlock",
+                "command": "gnuradio-integration.renameBlockInTree",
                 "when": "focusedView == gnuradioModule"
             },
             {
                 "key": "delete",
-                "command": "gnuradio-integration.removeBlock",
+                "command": "gnuradio-integration.removeBlockInTree",
                 "when": "focusedView == gnuradioModule"
             },
             {

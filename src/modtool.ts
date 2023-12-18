@@ -8,9 +8,10 @@ import {
 import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
+import { join, resolve } from 'path';
 import { PythonShell } from 'python-shell';
 import * as blocks from './blockFilter';
-import { basename, extname, join, resolve } from 'path';
+import { getBlockFilesTree } from './moduleTree';
 
 export type ModtoolClosure = (command: string, ...args: string[]) => Promise<any[]>;
 
@@ -453,6 +454,166 @@ export async function makeYamlFromImpl(execModtool: ModtoolClosure, cwd: string,
             ? join('grc', `${moduleName}_${blockName}.block.yml`)
             : 'grc';
         window.showInformationMessage(`Block definition written to "${blockYamlPath}"`);
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Disable the block.
+ * 
+ * This command runs `gr_modtool disable %f`, commenting out all related lines in CMakeLists.
+ * 
+ * TODO: `gr_modtool disable` does not work correctly.
+ */
+export async function disableBlock(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const existingBlocks = blocks.getAllBlocks(cwd, moduleName);
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.filteredMapBlockFile(blockName, moduleName);
+            }
+            blockName = await quickPickWithRegex(
+                Array.from(existingBlocks), {
+                title: 'GNURadio: Disable Blocks',
+                placeholder: 'Enter block name or regular expression...',
+                value: blockName,
+            });
+            if (!blockName) {
+                return;
+            }
+        }
+        let warningMessage: string;
+        let successMessage: string;
+        let detailMessage: string[] = [];
+        if (existingBlocks.has(blockName)) {
+            warningMessage = `Are you sure you want to disable "${blockName}"?`;
+            successMessage = `Block "${blockName}" was disabled`;
+        } else {
+            warningMessage = 'Are you sure you want to disable multiple blocks?';
+            const re = RegExp(blockName);
+            existingBlocks.forEach(block => {
+                if (re.test(block)) {
+                    detailMessage.push(`"${block}"`);
+                }
+            });
+            successMessage = 'Matching blocks were disabled: ', detailMessage.join(', ');
+            detailMessage.unshift('The following blocks will be disabled:');
+        }
+        const confirm = await window.showWarningMessage(
+            warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
+        if (confirm === 'Yes') {
+            await execModtool('disable', blockName);
+            window.showInformationMessage(successMessage);
+        }
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Remove the block from the OOT module.
+ * 
+ * This command runs `gr_modtool rm %f`, removing all related files and changing CMakeLists.
+ */
+export async function removeBlock(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const existingBlocks = blocks.getAllBlocks(cwd, moduleName);
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.filteredMapBlockFile(blockName, moduleName);
+            }
+            blockName = await quickPickWithRegex(
+                Array.from(existingBlocks), {
+                title: 'GNURadio: Remove Blocks',
+                placeholder: 'Enter block name or regular expression...',
+                value: blockName,
+            });
+            if (!blockName) {
+                return;
+            }
+        }
+        let warningMessage: string;
+        let successMessage: string;
+        let detailMessage: string[] = [];
+        if (existingBlocks.has(blockName)) {
+            warningMessage = `Are you sure you want to remove "${blockName}"?`;
+            successMessage = `Block "${blockName}" was removed`;
+            detailMessage = (await getBlockFilesTree(blockName, Uri.file(cwd), moduleName))
+                .map(item => item.resourceUri!.fsPath.slice(cwd.length + 1));
+            detailMessage.unshift('The following files will be deleted:');
+        } else {
+            warningMessage = `Are you sure you want to remove multiple blocks?`;
+            const re = RegExp(blockName);
+            existingBlocks.forEach(block => {
+                if (re.test(block)) {
+                    detailMessage.push(`"${block}"`);
+                }
+            });
+            successMessage = 'Matching blocks were removed: ' + detailMessage.join(', ');
+            detailMessage.unshift('The following blocks will be removed:');
+        }
+        const confirm = await window.showWarningMessage(
+            warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
+        if (confirm === 'Yes') {
+            await execModtool('rm', blockName);
+            window.showInformationMessage(successMessage);
+        }
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Change the block's name.
+ * 
+ * This command runs `gr_modtool rename %f`, renaming all related files and changing CMakeLists.
+ */
+export async function renameBlock(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const existingBlocks = blocks.getAllBlocks(cwd, moduleName);
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.filteredMapBlockFile(blockName, moduleName);
+            }
+            blockName = await quickPick(
+                Array.from(existingBlocks), {
+                title: 'GNURadio: Rename Block',
+                placeholder: 'Enter block name...',
+                value: blockName,
+            });
+            if (!blockName) {
+                return;
+            }
+        }
+        const newBlockName = await window.showInputBox({
+            title: `GNURadio: Rename "${blockName}"`,
+            placeHolder: 'Enter new block name...',
+            validateInput: validateBlockName(existingBlocks),
+        });
+        if (!newBlockName) {
+            return;
+        }
+        let blockFiles = (await getBlockFilesTree(blockName, Uri.file(cwd), moduleName))
+            .map(item => item.resourceUri!.fsPath.slice(cwd.length + 1));
+        blockFiles.unshift('The following files will be renamed:');
+        const confirm = await window.showWarningMessage(
+            `Are you sure you want to rename "${blockName}" to "${newBlockName}"?`,
+            { detail: blockFiles.join('\n- '), modal: true },
+            'Yes');
+        if (confirm === 'Yes') {
+            await execModtool('rename', blockName, newBlockName);
+            window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
+        }
     } catch (err) {
         if (err instanceof Error) {
             window.showErrorMessage(err.message);

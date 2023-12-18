@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import { basename } from 'path';
 import { PythonShell } from 'python-shell';
-import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
 import * as blocks from './blockFilter';
 import * as modtool from './modtool';
@@ -100,11 +99,7 @@ export async function activate(context: vscode.ExtensionContext) {
         });
     };
 
-    const ctl = new GNURadioController(context.extensionUri,
-        context.extension.packageJSON.displayName, cwd);
-
     context.subscriptions.push(
-        ctl,
         vscode.commands.registerCommand(
             `${extId}.createModule`,
             () => modtool.createModule(outputChannel, scriptPath)),
@@ -121,7 +116,6 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
     }
     vscode.commands.executeCommand('setContext', `${extId}.moduleFound`, true);
-    ctl.moduleName = moduleName;
 
     // Command Palette
     context.subscriptions.push(
@@ -135,17 +129,14 @@ export async function activate(context: vscode.ExtensionContext) {
             `${extId}.createPythonBindings`,
             () => modtool.createPythonBindings(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.renameBlock.name}`,
-            ctl.renameBlock,
-            ctl),
+            `${extId}.renameBlock`,
+            () => modtool.renameBlock(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.disableBlock.name}`,
-            ctl.disableBlock,
-            ctl),
+            `${extId}.disableBlock`,
+            () => modtool.disableBlock(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.removeBlock.name}`,
-            ctl.removeBlock,
-            ctl),
+            `${extId}.removeBlock`,
+            () => modtool.removeBlock(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
             `${extId}.convertXmlToYaml`,
             () => modtool.convertXmlToYaml(execModtool, cwd, moduleName)),
@@ -210,7 +201,7 @@ export async function activate(context: vscode.ExtensionContext) {
         let updateAll = await vscode.window.showInformationMessage(
             'XML block definitions found. Update them to YAML?', yes, no, dontShowAgain);
         if (updateAll === 'Yes') {
-            await ctl.execModtool('update', '--complete');
+            await execModtool('update', '--complete');
             vscode.commands.executeCommand('setContext', `${extId}.xmlFound`, false);
             updateAll = await vscode.window.showInformationMessage(
                 'Updated block definitions written to "grc/".', dontShowAgain);
@@ -267,6 +258,18 @@ export async function activate(context: vscode.ExtensionContext) {
             `${extId}.refreshView`,
             moduleTree.refresh,
             moduleTree),
+        vscode.commands.registerCommand(
+            `${extId}.renameBlockInTree`,
+            (item?: vscode.TreeItem) => {
+                const blockName = getBlockFromTreeItem(item);
+                return modtool.renameBlock(execModtool, cwd, moduleName, blockName);
+            }),
+        vscode.commands.registerCommand(
+            `${extId}.removeBlockInTree`,
+            (item?: vscode.TreeItem) => {
+                const blockName = getBlockFromTreeItem(item);
+                return modtool.removeBlock(execModtool, cwd, moduleName, blockName);
+            }),
         vscode.commands.registerCommand(
             `${extId}.createPythonBindingsInTree`,
             (item?: vscode.TreeItem) => {
