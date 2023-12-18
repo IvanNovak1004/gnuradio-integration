@@ -1,12 +1,13 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { basename } from 'path';
+import { PythonShell } from 'python-shell';
 import { GNURadioController } from './controller';
 import { exec, execOnFile } from './shellTask';
-import { GNURadioModuleTreeDataProvider } from './moduleTree';
-import { getXmlBlocks } from './blockFilter';
-import { PythonShell } from 'python-shell';
+import * as blocks from './blockFilter';
 import * as modtool from './modtool';
+import { GNURadioModuleTreeDataProvider } from './moduleTree';
 
 export async function activate(context: vscode.ExtensionContext) {
     const extId: string = context.extension.packageJSON.name;
@@ -122,6 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand('setContext', `${extId}.moduleFound`, true);
     ctl.moduleName = moduleName;
 
+    // Command Palette
     context.subscriptions.push(
         vscode.commands.registerCommand(
             `${extId}.getModuleInfo`,
@@ -146,13 +148,39 @@ export async function activate(context: vscode.ExtensionContext) {
             ctl.removeBlock,
             ctl),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.convertXmlToYaml.name}`,
-            ctl.convertXmlToYaml,
-            ctl),
+            `${extId}.convertXmlToYaml`,
+            () => modtool.convertXmlToYaml(execModtool, cwd, moduleName)),
         vscode.commands.registerCommand(
-            `${extId}.${ctl.makeYamlFromImpl.name}`,
-            ctl.makeYamlFromImpl,
-            ctl),
+            `${extId}.makeYamlFromImpl`,
+            () => modtool.makeYamlFromImpl(execModtool, cwd, moduleName)),
+    );
+
+    // File Explorer Context Menu
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            `${extId}.convertXmlToYamlInExplorer`,
+            (blockUri: vscode.Uri) => {
+                if (!blockUri) {
+                    return vscode.window.showErrorMessage('No file provided!');
+                }
+                if (!blocks.filterXmlBlocks(blockUri.fsPath)) {
+                    return vscode.window.showErrorMessage(`Invalid file type: expected XML, found ${basename(blockUri.fsPath)}`);
+                }
+                const blockName = blocks.mapGrcBlocks('.xml')(blockUri.fsPath);
+                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName);
+            }),
+        vscode.commands.registerCommand(
+            `${extId}.makeYamlFromImplInExplorer`,
+            (blockUri: vscode.Uri) => {
+                if (!blockUri) {
+                    return vscode.window.showErrorMessage('No file provided!');
+                }
+                if (!blocks.filterCppBlockImpl(blockUri.fsPath)) {
+                    return vscode.window.showErrorMessage(`Invalid file type: expected C++ source, found ${basename(blockUri.fsPath)}`);
+                }
+                const blockName = blocks.mapCppBlockImpl(blockUri.fsPath);
+                return modtool.makeYamlFromImpl(execModtool, cwd, moduleName, blockName);
+            }),
     );
 
     /**
@@ -161,7 +189,7 @@ export async function activate(context: vscode.ExtensionContext) {
      * If any are found, asks if the user wants to update them to YAML.
      */
     const checkXml = async () => {
-        const xmlBlocks = getXmlBlocks(cwd, moduleName);
+        const xmlBlocks = blocks.getXmlBlocks(cwd, moduleName);
         vscode.commands.executeCommand('setContext', `${extId}.xmlFound`, xmlBlocks.length > 0);
         if (!xmlBlocks.length) {
             return;

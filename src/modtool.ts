@@ -10,7 +10,7 @@ import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { PythonShell } from 'python-shell';
 import * as blocks from './blockFilter';
-import { resolve } from 'path';
+import { basename, extname, join, resolve } from 'path';
 
 export type ModtoolClosure = (command: string, ...args: string[]) => Promise<any[]>;
 
@@ -319,6 +319,92 @@ export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd
             ? resolve(cwd, 'python', moduleName, `${state.name}.py`)
             : resolve(cwd, 'include', 'gnuradio', moduleName, `${state.name}.h`);
         commands.executeCommand('vscode.open', Uri.file(blockPath));
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Convert old XML block definitions to YAML.
+ * 
+ * This command runs `gr_modtool update %f`, generating a new YAML definition and deleting the old XML.
+ */
+export async function convertXmlToYaml(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const xmlBlocks = blocks.getXmlBlocks(cwd, moduleName);
+        if (xmlBlocks.length === 0) {
+            return window.showInformationMessage('No XML found, no need to update!');
+        }
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.mapGrcBlocks(moduleName, '.xml')(blockName);
+                if (!xmlBlocks.includes(blockName)) {
+                    blockName = undefined;
+                }
+            }
+            blockName = await quickPick(
+                xmlBlocks, {
+                title: 'GNURadio: Convert XML to YAML',
+                placeholder: 'Enter block name...',
+                value: blockName,
+            });
+        }
+        if (blockName) {
+            await execModtool('update', blockName);
+            window.showInformationMessage(`Block definition written to "grc/${moduleName}_${blockName}.block.yml"`);
+        } else {
+            const updateAll = await window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
+            if (updateAll === 'Yes') {
+                await execModtool('update', '--complete');
+                window.showInformationMessage(`Block definitions written to "grc/"`);
+            }
+        }
+    } catch (err) {
+        if (err instanceof Error) {
+            window.showErrorMessage(err.message);
+        }
+    }
+}
+
+/**
+ * Make YAML definition the block implementation.
+ * 
+ * This command runs `gr_modtool makeyaml %f`, generating a YAML definition based on the block's implementation.
+ * 
+ * TODO: `gr_modtool makeyaml` does not work correctly.
+ */
+export async function makeYamlFromImpl(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
+    try {
+        const cppBlocks = blocks.getCppBlockImpl(cwd);
+        if (cppBlocks.length === 0) {
+            return window.showInformationMessage('No C++ blocks found');
+        }
+        if (!blockName) {
+            blockName = window.activeTextEditor?.document.fileName;
+            if (blockName) {
+                blockName = blocks.mapCppBlockImpl(blockName);
+                if (!cppBlocks.includes(blockName)) {
+                    blockName = undefined;
+                }
+            }
+            blockName = await quickPickWithRegex(
+                cppBlocks, {
+                title: 'GNURadio: Make YAML from implementation',
+                placeholder: 'Enter block name or regular expression...',
+                value: blockName,
+            });
+            if (!blockName) {
+                return;
+            }
+        }
+        await execModtool('makeyaml', blockName);
+        let blockYamlPath = cppBlocks.includes(blockName)
+            ? join('grc', `${moduleName}_${blockName}.block.yml`)
+            : 'grc';
+        window.showInformationMessage(`Block definition written to "${blockYamlPath}"`);
     } catch (err) {
         if (err instanceof Error) {
             window.showErrorMessage(err.message);
