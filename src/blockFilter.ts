@@ -29,7 +29,7 @@ export function getCppBlocks(cwd: string, moduleName: string) {
 }
 
 export const filterPyBlocks = (filename: string) =>
-    extname(filename) === '.py' && basename(filename) !== '__init__.py' && !basename(filename).startsWith('qa_');
+    extname(filename) === '.py' && basename(filename) !== '__init__.py' && !filterBlockTests(filename);
 export const mapPyBlocks = (filename: string) => basename(filename).slice(0, -3);
 export function getPyBlocks(cwd: string, moduleName: string) {
     return readdirSync(resolve(cwd, 'python', moduleName))
@@ -52,6 +52,9 @@ export function getCppBlockImpl(cwd: string) {
         .filter(filterCppBlockImpl)
         .map(mapCppBlockImpl);
 }
+
+export const filterBlockTests = (filename: string) =>
+    basename(filename).startsWith('qa_') || basename(filename).startsWith('test_');
 
 export function filteredMapBlockFile(blockName: string, moduleName: string) {
     if (filterCppBlockImpl(blockName)) {

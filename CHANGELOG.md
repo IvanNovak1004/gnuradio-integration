@@ -5,6 +5,9 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Added QA/Test files to the block's file tree
+
 ### Changed
 - Moved shell tasks (`gnuradio-companion` and `grcc`) out of `GNURadioController` class
 - Moved tree view provider functionality out of `GNURadioController` class

@@ -97,13 +97,20 @@ export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName:
             blocks.filterCppBlocks(value[0]))
         .map(mapBlockToTreeItem('Public header', ['include', 'gnuradio', moduleName]));
 
-    const pyFiles = (await readdir('python', moduleName))
+    const pyDir = await readdir('python', moduleName);
+    const pyFiles = pyDir
         .filter((value) =>
             value[0].startsWith(block) &&
             blocks.filterPyBlocks(value[0]))
         .map(mapBlockToTreeItem('Implementation', ['python', moduleName]));
+    const pyTestFiles = pyDir
+        .filter((value) =>
+            blocks.filterBlockTests(value[0]) &&
+            value[0].endsWith(`${block}.py`))
+        .map(mapBlockToTreeItem('Python Tests', ['python', moduleName]));
 
-    const cppImplFiles = (await readdir('lib'))
+    const cppImplDir = await readdir('lib');
+    const cppImplFiles = cppImplDir
         .filter((value) =>
             value[0].startsWith(block) &&
             (blocks.filterCppBlockImpl(value[0]) || extname(value[0]) === '.h'))
@@ -112,7 +119,12 @@ export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName:
             item.label += extname(value[0]) === '.h' ? ' header' : ' source';
             return item;
         });
+    const cppTestFiles = cppImplDir
+        .filter((value) =>
+            blocks.filterBlockTests(value[0]) &&
+            RegExp(`${block}\.(cc|cpp|cxx)`).test(value[0]))
+        .map(mapBlockToTreeItem('C++ Tests', ['lib']));
 
-    return [...grcFiles, ...pyFiles, ...cppFiles, ...cppImplFiles];
+    return [...grcFiles, ...pyFiles, ...cppFiles, ...cppImplFiles, ...pyTestFiles, ...cppTestFiles];
 }
 
