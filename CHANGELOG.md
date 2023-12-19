@@ -7,6 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added QA/Test files to the block's file tree
+- Added module view auto-refresh on certain modtool commands (Create Block, Rename Block, Remove Block, Update XML to YAML, Make YAML from Implementation)
 
 ### Changed
 - Moved shell tasks (`gnuradio-companion` and `grcc`) out of `GNURadioController` class

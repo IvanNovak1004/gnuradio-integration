@@ -3,7 +3,7 @@
 import {
     commands, window, workspace, tasks, l10n,
     ExtensionContext, ConfigurationTarget,
-    Uri, TreeItem,
+    Uri, TreeItem, EventEmitter,
 } from 'vscode';
 import { basename } from 'path';
 import { PythonShell } from 'python-shell';
@@ -93,15 +93,6 @@ export async function activate(context: ExtensionContext) {
 
     const outputChannel = window.createOutputChannel(context.extension.packageJSON.displayName);
     const scriptPath = Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
-    const execModtool: modtool.ModtoolClosure = async (command: string, ...args: string[]) => {
-        outputChannel.appendLine(`\n[Running] gr_modtool ${command} ${args.join(' ')}`);
-        return PythonShell.run(
-            `${command}.py`, {
-            parser(data) { outputChannel.appendLine(data); return data; },
-            stderrParser(data) { outputChannel.appendLine(data); return data; },
-            mode: 'text', encoding: 'utf8', scriptPath, cwd, args,
-        });
-    };
 
     context.subscriptions.push(
         commands.registerCommand(
@@ -112,6 +103,22 @@ export async function activate(context: ExtensionContext) {
     if (!cwd) {
         return;
     }
+
+    const modtoolEvent = new EventEmitter<string[]>();
+    context.subscriptions.push(modtoolEvent);
+    const execModtool: modtool.ModtoolClosure = async (command: string, ...args: string[]) => {
+        outputChannel.appendLine(`\n[Running] gr_modtool ${command} ${args.join(' ')}`);
+        return PythonShell.run(
+            `${command}.py`, {
+            parser(data) { outputChannel.appendLine(data); return data; },
+            stderrParser(data) { outputChannel.appendLine(data); return data; },
+            mode: 'text', encoding: 'utf8', scriptPath, cwd, args,
+        }).then(output => {
+            modtoolEvent.fire([command, ...args]);
+            return output;
+        });
+    };
+
     // Detect OOT module in the current working directory
     const moduleName: string = (await modtool.getModuleInfo(execModtool, true))?.modname;
     if (!moduleName) {
@@ -258,6 +265,12 @@ export async function activate(context: ExtensionContext) {
 
     context.subscriptions.push(
         moduleTree,
+        modtoolEvent.event((cmd: string[]) => {
+            // TODO: 'bind', 'disable'
+            if (['add', 'rename', 'rm', 'update', 'makeyaml'].includes(cmd[0])) {
+                moduleTree.refresh();
+            }
+        }),
         commands.registerCommand(
             `${extId}.refreshView`,
             moduleTree.refresh,
