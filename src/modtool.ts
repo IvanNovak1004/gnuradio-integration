@@ -428,14 +428,14 @@ export async function convertXmlToYaml(execModtool: ModtoolClosure, cwd: string,
  */
 export async function makeYamlFromImpl(execModtool: ModtoolClosure, cwd: string, moduleName: string, blockName?: string) {
     try {
-        const cppBlocks = blocks.getCppBlockImpl(cwd);
+        const cppBlocks = blocks.getCppImplFiles(cwd);
         if (cppBlocks.length === 0) {
             return window.showInformationMessage('No C++ blocks found');
         }
         if (!blockName) {
             blockName = window.activeTextEditor?.document.fileName;
             if (blockName) {
-                blockName = blocks.mapCppBlockImpl(blockName);
+                blockName = blocks.mapCppImplFiles(blockName);
                 if (!cppBlocks.includes(blockName)) {
                     blockName = undefined;
                 }

@@ -189,10 +189,10 @@ export async function activate(context: ExtensionContext) {
                 if (!blockUri) {
                     return window.showErrorMessage('No file provided!');
                 }
-                if (!blocks.filterCppBlockImpl(blockUri.fsPath)) {
+                if (!blocks.filterCppImplFiles(blockUri.fsPath)) {
                     return window.showErrorMessage(`Invalid file type: expected C++ source, found ${basename(blockUri.fsPath)}`);
                 }
-                const blockName = blocks.mapCppBlockImpl(blockUri.fsPath);
+                const blockName = blocks.mapCppImplFiles(blockUri.fsPath);
                 return modtool.makeYamlFromImpl(execModtool, cwd, moduleName, blockName);
             }),
     );

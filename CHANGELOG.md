@@ -7,6 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added QA/Test files to the block's file tree
+- Added C++ noblock support to modtool commands (Disable Block, Rename Block, Remove Block, Make YAML from Implementation) and to the block's file tree (implementation files)
 - Added module view auto-refresh on certain modtool commands (Create Block, Rename Block, Remove Block, Update XML to YAML, Make YAML from Implementation)
 
 ### Changed

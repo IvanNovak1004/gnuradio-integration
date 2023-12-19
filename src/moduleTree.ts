@@ -113,7 +113,7 @@ export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName:
     const cppImplFiles = cppImplDir
         .filter((value) =>
             value[0].startsWith(block) &&
-            (blocks.filterCppBlockImpl(value[0]) || extname(value[0]) === '.h'))
+            (blocks.filterCppImplFiles(value[0]) || extname(value[0]) === '.h'))
         .map((value) => {
             let item = mapBlockToTreeItem('Implementation', ['lib'])(value);
             item.label += extname(value[0]) === '.h' ? ' header' : ' source';
@@ -127,4 +127,3 @@ export async function getBlockFilesTree(block: string, baseUri: Uri, moduleName:
 
     return [...grcFiles, ...pyFiles, ...cppFiles, ...cppImplFiles, ...pyTestFiles, ...cppTestFiles];
 }
-

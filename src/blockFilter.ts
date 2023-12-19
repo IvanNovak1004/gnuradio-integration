@@ -45,20 +45,23 @@ export function getAllBlocks(cwd: string, moduleName: string) {
     ]);
 }
 
-export const filterCppBlockImpl = (filename: string) => filename.endsWith('_impl.cc') || filename.endsWith('_impl.cpp') || filename.endsWith('_impl.cxx');
-export const mapCppBlockImpl = (filename: string) => extname(filename) === '.cc' ? basename(filename).slice(0, -8) : basename(filename).slice(0, -9);
-export function getCppBlockImpl(cwd: string) {
+export const filterCppImplFiles = (filename: string) => ['.cc', '.cpp', '.cxx'].includes(extname(filename));
+export const mapCppImplFiles = (filename: string) => {
+    const fname = filename.slice(0, -extname(filename).length);
+    return fname.endsWith('_impl') ? fname.slice(0, -5) : fname;
+};
+export function getCppImplFiles(cwd: string) {
     return readdirSync(resolve(cwd, 'lib'))
-        .filter(filterCppBlockImpl)
-        .map(mapCppBlockImpl);
+        .filter(filterCppImplFiles)
+        .map(mapCppImplFiles);
 }
 
 export const filterBlockTests = (filename: string) =>
     basename(filename).startsWith('qa_') || basename(filename).startsWith('test_');
 
 export function filteredMapBlockFile(blockName: string, moduleName: string) {
-    if (filterCppBlockImpl(blockName)) {
-        return mapCppBlockImpl(blockName);
+    if (filterCppImplFiles(blockName)) {
+        return mapCppImplFiles(blockName);
     } else if (blockName.endsWith('_impl.h')) {
         return basename(blockName).slice(0, -7);
     } else if (filterCppBlocks(blockName)) {
