@@ -1,5 +1,3 @@
-'use strict';
-
 import {
     commands, window, workspace, tasks, l10n,
     ExtensionContext, ConfigurationTarget,

@@ -1,5 +1,3 @@
-'use strict';
-
 import { readdirSync } from "fs";
 import { basename, extname, resolve } from "path";
 

@@ -1,5 +1,3 @@
-'use strict';
-
 import {
     commands, window, workspace,
     Uri, ThemeIcon, OutputChannel,
@@ -43,6 +41,7 @@ export function validateBlockName(existingBlocks: Set<string>) {
                 severity: InputBoxValidationSeverity.Error,
             };
         }
+        return null;
     };
 }
 
@@ -77,6 +76,7 @@ export async function createModule(outputChannel: OutputChannel, scriptPath: str
                         then: null,
                     };
                 }
+                return null;
             },
         });
         if (!newmodName) {
@@ -406,9 +406,9 @@ export async function convertXmlToYaml(execModtool: ModtoolClosure, cwd: string,
             await execModtool('update', blockName);
             window.showInformationMessage(`Block definition written to "grc/${moduleName}_${blockName}.block.yml"`);
         } else {
-            const updateAll = await window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
-            if (updateAll === 'Yes') {
-                await execModtool('update', '--complete');
+        const updateAll = await window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
+        if (updateAll === 'Yes') {
+            await execModtool('update', '--complete');
                 window.showInformationMessage(`Block definitions written to "grc/"`);
             }
         }

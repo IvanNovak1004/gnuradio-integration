@@ -1,5 +1,3 @@
-'use strict';
-
 import {
     window, workspace, Uri, FileType, EventEmitter,
     TreeDataProvider, TreeView, TreeItem, TreeItemCollapsibleState,

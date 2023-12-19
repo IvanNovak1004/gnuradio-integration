@@ -1,5 +1,3 @@
-'use strict';
-
 import { dirname, extname } from 'path';
 import * as vscode from 'vscode';
 
