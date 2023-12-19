@@ -17,6 +17,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Fixed
 - Fixed commands (Create Block, Rename Block, Convert XML to YAML) not waiting until modtool execution is finished, thus displaying success messages even on failure
 - Fixed 'Convert XML to YAML' not working without blockname (made argument optional)
+- Fixed 'Create Block' getting stuck on 'Tests' pick when creating C++ noblock
 
 ## [0.3.0] - 2023-12-13
 ### Added

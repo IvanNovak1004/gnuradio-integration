@@ -243,6 +243,7 @@ export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd
                 state.finished = true;
                 return;
             }
+            state.totalSteps = 5;
             return (input: MultiStepInput) => pickTests(input, state);
         }
 
@@ -255,7 +256,7 @@ export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd
                     iconPath: Uri.joinPath(extRoot, 'media', 'file_type_python.svg')
                 });
             }
-            if (state.language?.label.includes('C++')) {
+            if (state.language?.description === 'cpp') {
                 testLanguages.push({
                     label: 'C++',
                     description: 'cpp',
