@@ -235,11 +235,11 @@
                     "when": "false"
                 },
                 {
-                    "command": "gnuradio-integration.renameBlock",
+                    "command": "gnuradio-integration.renameBlockInTree",
                     "when": "false"
                 },
                 {
-                    "command": "gnuradio-integration.removeBlock",
+                    "command": "gnuradio-integration.removeBlockInTree",
                     "when": "false"
                 },
                 {
