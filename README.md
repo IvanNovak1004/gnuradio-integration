@@ -9,7 +9,7 @@ Features:
 - Manipulating the OOT module with `gr_modtool`
 
 ## OOT Module Explorer
-If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** tree view will appear in the Explorer container. All blocks within that module are presented with the corresponding files: YAML GRC block definition, Python implementation for Python blocks, C++ header and implementation for C++ blocks.
+If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** tree view will appear in the Explorer container. All blocks within that module are presented with the corresponding files: YAML GRC block definition, Python implementation for Python blocks, C++ header and implementation for C++ blocks, Python and C++ QA (unit testing) source files.
 
 ![Module view, block context menu](./imgs/module_tree.png) ![Module view, file context menu](./imgs/module_tree_contextmenu.png)
 
