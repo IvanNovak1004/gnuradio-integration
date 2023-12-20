@@ -14,6 +14,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Moved shell tasks (`gnuradio-companion` and `grcc`) out of `GNURadioController` class
 - Moved tree view provider functionality out of `GNURadioController` class
 - Moved XML check on startup out of `GNURadioController` class
+- Changed error handling to catch only specific errors
 
 ### Fixed
 - Fixed commands (Create Block, Rename Block, Convert XML to YAML) not waiting until modtool execution is finished, thus displaying success messages even on failure

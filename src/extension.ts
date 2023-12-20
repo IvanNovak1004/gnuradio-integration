@@ -4,7 +4,7 @@ import {
     Uri, TreeItem, EventEmitter,
 } from 'vscode';
 import { basename } from 'path';
-import { PythonShell } from 'python-shell';
+import { PythonShell, PythonShellError, PythonShellErrorWithLogs } from 'python-shell';
 import { exec, execOnFile } from './shellTask';
 import * as blocks from './blockFilter';
 import * as modtool from './modtool';
@@ -40,9 +40,18 @@ export async function activate(context: ExtensionContext) {
      */
     const editInGnuradioCompanion = commands.registerCommand(
         `${extId}.editInGnuradioCompanion`,
-        (fileUri?: Uri) => {
-            const cmd = getConfig<string>('companion.cmd') ?? 'gnuradio-companion';
-            execOnFile(`"${cmd}"`, fileUri, '.grc');
+        async (fileUri?: Uri) => {
+            try {
+                const cmd = getConfig<string>('companion.cmd') ?? 'gnuradio-companion';
+                await execOnFile(`"${cmd}"`, fileUri, '.grc');
+            }
+            catch (err: unknown) {
+                if (err instanceof URIError) {
+                    window.showErrorMessage(err.message);
+                } else {
+                    throw err;
+                }
+            }
         });
 
     /**
@@ -52,9 +61,18 @@ export async function activate(context: ExtensionContext) {
      */
     const compileFlowgraph = commands.registerCommand(
         `${extId}.compileFlowgraph`,
-        (fileUri?: Uri) => {
-            const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
-            execOnFile(`"${cmd}"`, fileUri, '.grc');
+        async (fileUri?: Uri) => {
+            try {
+                const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
+                await execOnFile(`"${cmd}"`, fileUri, '.grc');
+            }
+            catch (err: unknown) {
+                if (err instanceof URIError) {
+                    window.showErrorMessage(err.message);
+                } else {
+                    throw err;
+                }
+            }
         });
 
     /**
@@ -64,9 +82,18 @@ export async function activate(context: ExtensionContext) {
      */
     const runFlowgraph = commands.registerCommand(
         `${extId}.runFlowgraph`,
-        (fileUri?: Uri) => {
-            const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
-            execOnFile(`"${cmd}" -r`, fileUri, '.grc');
+        async (fileUri?: Uri) => {
+            try {
+                const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
+                await execOnFile(`"${cmd}" -r`, fileUri, '.grc');
+            }
+            catch (err: unknown) {
+                if (err instanceof URIError) {
+                    window.showErrorMessage(err.message);
+                } else {
+                    throw err;
+                }
+            }
         });
 
     context.subscriptions.push(
@@ -111,10 +138,33 @@ export async function activate(context: ExtensionContext) {
             parser(data) { outputChannel.appendLine(data); return data; },
             stderrParser(data) { outputChannel.appendLine(data); return data; },
             mode: 'text', encoding: 'utf8', scriptPath, cwd, args,
-        }).then(output => {
-            modtoolEvent.fire([command, ...args]);
-            return output;
-        });
+        }).then(
+            output => {
+                modtoolEvent.fire([command, ...args]);
+                return output;
+            },
+            (err: unknown) => {
+                if (err instanceof PythonShellError ||
+                    err instanceof PythonShellErrorWithLogs) {
+                    window.showErrorMessage(err.message);
+                    return [
+                        typeof err.traceback === 'object'
+                            ? err.traceback.toString('utf8')
+                            : err.traceback
+                    ];
+                } else {
+                    throw err;
+                }
+            }
+        );
+    };
+
+    const catchModtoolError = (err: unknown) => {
+        if (err instanceof modtool.ModtoolError) {
+            return window.showErrorMessage(err.message);
+        } else {
+            throw err;
+        }
     };
 
     // Detect OOT module in the current working directory
@@ -130,28 +180,36 @@ export async function activate(context: ExtensionContext) {
     context.subscriptions.push(
         commands.registerCommand(
             `${extId}.getModuleInfo`,
-            () => modtool.getModuleInfo(execModtool)),
+            () => modtool.getModuleInfo(execModtool)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.createBlock`,
-            () => modtool.createBlock(execModtool, context.extensionUri, cwd, moduleName)),
+            () => modtool.createBlock(execModtool, context.extensionUri, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.createPythonBindings`,
-            () => modtool.createPythonBindings(execModtool, cwd, moduleName)),
+            () => modtool.createPythonBindings(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.renameBlock`,
-            () => modtool.renameBlock(execModtool, cwd, moduleName)),
+            () => modtool.renameBlock(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.disableBlock`,
-            () => modtool.disableBlock(execModtool, cwd, moduleName)),
+            () => modtool.disableBlock(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.removeBlock`,
-            () => modtool.removeBlock(execModtool, cwd, moduleName)),
+            () => modtool.removeBlock(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.convertXmlToYaml`,
-            () => modtool.convertXmlToYaml(execModtool, cwd, moduleName)),
+            () => modtool.convertXmlToYaml(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
         commands.registerCommand(
             `${extId}.makeYamlFromImpl`,
-            () => modtool.makeYamlFromImpl(execModtool, cwd, moduleName)),
+            () => modtool.makeYamlFromImpl(execModtool, cwd, moduleName)
+                .catch(catchModtoolError)),
     );
 
     // File Explorer Context Menu
@@ -160,14 +218,14 @@ export async function activate(context: ExtensionContext) {
             `${extId}.createPythonBindingsInExplorer`,
             (blockUri: Uri) => {
                 if (!blockUri) {
-                    window.showErrorMessage('No file provided!');
-                    return;
+                    return window.showErrorMessage('No file provided!');
                 }
                 if (!blocks.filterCppBlocks(blockUri.fsPath)) {
-                    window.showErrorMessage(`Invalid file type: expected a header (.h), found ${basename(blockUri.fsPath)}`);
+                    return window.showErrorMessage(`Invalid file type: expected a header (.h), found ${basename(blockUri.fsPath)}`);
                 }
                 const blockName = blocks.mapCppBlocks(blockUri.fsPath);
-                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName);
+                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         commands.registerCommand(
             `${extId}.convertXmlToYamlInExplorer`,
@@ -179,7 +237,8 @@ export async function activate(context: ExtensionContext) {
                     return window.showErrorMessage(`Invalid file type: expected XML, found ${basename(blockUri.fsPath)}`);
                 }
                 const blockName = blocks.mapGrcBlocks('.xml')(blockUri.fsPath);
-                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName);
+                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         commands.registerCommand(
             `${extId}.makeYamlFromImplInExplorer`,
@@ -191,7 +250,8 @@ export async function activate(context: ExtensionContext) {
                     return window.showErrorMessage(`Invalid file type: expected C++ source, found ${basename(blockUri.fsPath)}`);
                 }
                 const blockName = blocks.mapCppImplFiles(blockUri.fsPath);
-                return modtool.makeYamlFromImpl(execModtool, cwd, moduleName, blockName);
+                return modtool.makeYamlFromImpl(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
     );
 
@@ -277,25 +337,29 @@ export async function activate(context: ExtensionContext) {
             `${extId}.renameBlockInTree`,
             (item?: TreeItem) => {
                 const blockName = getBlockFromTreeItem(item);
-                return modtool.renameBlock(execModtool, cwd, moduleName, blockName);
+                return modtool.renameBlock(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         commands.registerCommand(
             `${extId}.removeBlockInTree`,
             (item?: TreeItem) => {
                 const blockName = getBlockFromTreeItem(item);
-                return modtool.removeBlock(execModtool, cwd, moduleName, blockName);
+                return modtool.removeBlock(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         commands.registerCommand(
             `${extId}.createPythonBindingsInTree`,
             (item?: TreeItem) => {
                 const blockName = getBlockFromTreeItem(item);
-                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName);
+                return modtool.createPythonBindings(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         commands.registerCommand(
             `${extId}.convertXmlToYamlInTree`,
             (item?: TreeItem) => {
                 const blockName = getBlockFromTreeItem(item);
-                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName);
+                return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName)
+                    .catch(catchModtoolError);
             }),
         registerTreeItemAlias('fileOpenBeside', 'explorer.openToSide'),
         registerTreeItemAlias('fileOpenFolder', 'revealFileInOS'),
