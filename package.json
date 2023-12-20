@@ -2,7 +2,7 @@
     "name": "gnuradio-integration",
     "displayName": "GNURadio Integration",
     "description": "GNURadio Integration",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "license": "MIT",
     "publisher": "AsriFox",
     "engines": {

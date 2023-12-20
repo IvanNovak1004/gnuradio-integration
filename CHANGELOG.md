@@ -5,15 +5,19 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.3.1] - 2023-12-20
 ### Added
+- Added 'Convert XML to YAML' command to the block context menu in module view
 - Added QA/Test files to the block's file tree
 - Added C++ noblock support to modtool commands (Disable Block, Rename Block, Remove Block, Make YAML from Implementation) and to the block's file tree (implementation files)
 - Added module view auto-refresh on certain modtool commands (Create Block, Rename Block, Remove Block, Update XML to YAML, Make YAML from Implementation)
 
 ### Changed
-- Moved shell tasks (`gnuradio-companion` and `grcc`) out of `GNURadioController` class
-- Moved tree view provider functionality out of `GNURadioController` class
-- Moved XML check on startup out of `GNURadioController` class
+- Refactor - removed unnecessary `GNURadioController`:
+  - Moved shell tasks (`gnuradio-companion` and `grcc`) to separate functions
+  - Moved all modtool commands to separate functions
+  - Moved tree view provider functionality to a separate class
 - Changed error handling to catch only specific errors
 
 ### Fixed
@@ -116,8 +120,9 @@ a workaround to activate the extension when the module has no blocks yet
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.0...HEAD
-[0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...v0.3.0
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.1.3...v0.2.0
