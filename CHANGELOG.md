@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Changed
+- Removed `python-shell` dependency; replaced it with own `PythonShell` class
 
 ## [0.3.1] - 2023-12-20
 ### Added

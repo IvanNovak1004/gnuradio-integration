@@ -1,17 +1,18 @@
 import {
     commands, window, workspace,
-    Uri, ThemeIcon, OutputChannel,
+    Uri, ThemeIcon,
     InputBoxValidationSeverity, QuickPickItem
 } from 'vscode';
 import { MultiStepInput } from './multiStepInput';
 import { execSync } from 'child_process';
+import { EOL } from 'os';
 import { existsSync } from 'fs';
 import { join, resolve } from 'path';
-import { PythonShell } from 'python-shell';
+import { PythonShell } from './python';
 import * as blocks from './blockFilter';
 import { getBlockFilesTree } from './moduleTree';
 
-export type ModtoolClosure = (command: string, ...args: string[]) => Promise<any[]>;
+export type ModtoolClosure = (...command: string[]) => Promise<string>;
 
 export class ModtoolError extends Error {
     constructor(message: string) {
@@ -58,7 +59,7 @@ export function validateBlockName(existingBlocks: Set<string>) {
  * 
  * This command runs `gr_modtool newmod %name` in the shell, creating a new CMake project and opening the created folder. 
  */
-export async function createModule(outputChannel: OutputChannel, scriptPath: string) {
+export async function createModule(shell: PythonShell) {
     const newmodName = await window.showInputBox({
         title: 'GNURadio: New OOT Module',
         placeHolder: 'Enter Module Name...',
@@ -105,13 +106,8 @@ export async function createModule(outputChannel: OutputChannel, scriptPath: str
     if (existsSync(newmodPath)) {
         throw Error('Directory already exists');
     }
-    outputChannel.appendLine(`\n[Running] gr_modtool newmod ${newmodName}`);
-    await PythonShell.run('newmod.py', {
-        scriptPath, mode: 'text', encoding: 'utf8',
-        parser: data => { outputChannel.appendLine(data); return data; },
-        stderrParser: data => { outputChannel.appendLine(data); return data; },
-        cwd: parentDir.fsPath, args: [newmodName],
-    });
+    shell.outputChannel.appendLine(`\n[Running] gr_modtool newmod ${newmodName}`);
+    await shell.run(['newmod.py', newmodName], parentDir.fsPath);
     if (await window.showInformationMessage(`New GNURadio module "${newmodName}" created in ${newmodPath}.`, 'Open Directory') === 'Open Directory') {
         return commands.executeCommand<void>('vscode.openFolder', Uri.file(newmodPath));
     }
@@ -126,7 +122,7 @@ export async function getModuleInfo(execModtool: ModtoolClosure, json: boolean =
     const moduleInfoStr = (json
         ? await execModtool('info', '--python-readable')
         : await execModtool('info'))
-        .map(line => line.trim()).join('\n');
+        .split(EOL).map(line => line.trim()).join(EOL);
     if (json) {
         return JSON.parse(moduleInfoStr.replace(/\'/g, '"'));
     }

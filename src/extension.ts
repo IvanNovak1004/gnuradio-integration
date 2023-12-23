@@ -4,7 +4,7 @@ import {
     Uri, TreeItem, EventEmitter,
 } from 'vscode';
 import { basename } from 'path';
-import { PythonShell, PythonShellError, PythonShellErrorWithLogs } from 'python-shell';
+import { PythonShell, PythonShellError } from './python';
 import { exec, execOnFile } from './shellTask';
 import * as blocks from './blockFilter';
 import * as modtool from './modtool';
@@ -118,11 +118,12 @@ export async function activate(context: ExtensionContext) {
 
     const outputChannel = window.createOutputChannel(context.extension.packageJSON.displayName);
     const scriptPath = Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
+    const shell = PythonShell.default(scriptPath, context.extension.packageJSON.displayName);
 
     context.subscriptions.push(
         commands.registerCommand(
             `${extId}.createModule`,
-            () => modtool.createModule(outputChannel, scriptPath)),
+            () => modtool.createModule(shell)),
     );
 
     if (!cwd) {
@@ -131,27 +132,18 @@ export async function activate(context: ExtensionContext) {
 
     const modtoolEvent = new EventEmitter<string[]>();
     context.subscriptions.push(modtoolEvent);
-    const execModtool: modtool.ModtoolClosure = async (command: string, ...args: string[]) => {
-        outputChannel.appendLine(`\n[Running] gr_modtool ${command} ${args.join(' ')}`);
-        return PythonShell.run(
-            `${command}.py`, {
-            parser(data) { outputChannel.appendLine(data); return data; },
-            stderrParser(data) { outputChannel.appendLine(data); return data; },
-            mode: 'text', encoding: 'utf8', scriptPath, cwd, args,
-        }).then(
+    const execModtool: modtool.ModtoolClosure = async (...command: string[]) => {
+        shell.outputChannel.appendLine(`\n[Running] gr_modtool ${command.join(' ')}`);
+        command[0] += '.py';
+        return await shell.run(command, cwd).then(
             output => {
-                modtoolEvent.fire([command, ...args]);
+                modtoolEvent.fire(command);
                 return output;
             },
             (err: unknown) => {
-                if (err instanceof PythonShellError ||
-                    err instanceof PythonShellErrorWithLogs) {
+                if (err instanceof PythonShellError) {
                     window.showErrorMessage(err.message);
-                    return [
-                        typeof err.traceback === 'object'
-                            ? err.traceback.toString('utf8')
-                            : err.traceback
-                    ];
+                    return err.log ?? '';
                 } else {
                     throw err;
                 }
