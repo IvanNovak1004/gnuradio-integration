@@ -8,11 +8,14 @@ import { execSync } from 'child_process';
 import { EOL } from 'os';
 import { existsSync } from 'fs';
 import { join, resolve } from 'path';
-import { PythonShell } from './python';
+import { PythonShell, PythonShellError } from './python';
 import * as blocks from './blockFilter';
 import { getBlockFilesTree } from './moduleTree';
 
-export type ModtoolClosure = (...command: string[]) => Promise<string>;
+export type ModtoolClosure = (
+    cmd: 'info' | 'add' | 'bind' | 'rename' | 'disable' | 'rm' | 'update' | 'makeyaml',
+    ...args: string[]
+) => Promise<string | PythonShellError>;
 
 export class ModtoolError extends Error {
     constructor(message: string) {
@@ -119,17 +122,25 @@ export async function createModule(shell: PythonShell) {
  * This command runs `gr_modtool info` in the shell and returns a JSON map.
  */
 export async function getModuleInfo(execModtool: ModtoolClosure, json: boolean = false) {
-    const moduleInfoStr = (json
+    const output = json
         ? await execModtool('info', '--python-readable')
-        : await execModtool('info'))
-        .split(EOL).map(line => line.trim()).join(EOL);
+        : await execModtool('info');
+    if (output instanceof PythonShellError) {
+        if (output.log?.includes('ImportError')) {
+            throw new ModtoolError(
+                'Python modules for GNURadio not found. ' +
+                'Please check if GNURadio is installed on your system.');
+        } else {
+            throw new ModtoolError(output.message);
+        }
+    }
     if (json) {
-        return JSON.parse(moduleInfoStr.replace(/\'/g, '"'));
+        return JSON.parse(output.trim().replace(/\'/g, '"'));
     }
     await window.showInformationMessage(
         'GNURadio Module Info', {
         modal: true,
-        detail: moduleInfoStr,
+        detail: output.split(EOL).map(line => line.trim()).join(EOL),
     });
 }
 

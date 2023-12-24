@@ -116,7 +116,6 @@ export async function activate(context: ExtensionContext) {
         }),
     );
 
-    const outputChannel = window.createOutputChannel(context.extension.packageJSON.displayName);
     const scriptPath = Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
     const shell = PythonShell.default(scriptPath, context.extension.packageJSON.displayName);
 
@@ -132,9 +131,9 @@ export async function activate(context: ExtensionContext) {
 
     const modtoolEvent = new EventEmitter<string[]>();
     context.subscriptions.push(modtoolEvent);
-    const execModtool: modtool.ModtoolClosure = async (...command: string[]) => {
-        shell.outputChannel.appendLine(`\n[Running] gr_modtool ${command.join(' ')}`);
-        command[0] += '.py';
+    const execModtool: modtool.ModtoolClosure = async (cmd, ...args) => {
+        shell.outputChannel.appendLine(`\n[Running] gr_modtool ${cmd} ${args.join(' ')}`);
+        const command = [cmd + '.py', ...args];
         return await shell.run(command, cwd).then(
             output => {
                 modtoolEvent.fire(command);
@@ -142,8 +141,7 @@ export async function activate(context: ExtensionContext) {
             },
             (err: unknown) => {
                 if (err instanceof PythonShellError) {
-                    window.showErrorMessage(err.message);
-                    return err.log ?? '';
+                    return err;
                 } else {
                     throw err;
                 }
@@ -160,8 +158,11 @@ export async function activate(context: ExtensionContext) {
     };
 
     // Detect OOT module in the current working directory
-    const moduleName: string = (await modtool.getModuleInfo(execModtool, true))?.modname;
-    if (!moduleName) {
+    let moduleName: string;
+    try {
+        moduleName = (await modtool.getModuleInfo(execModtool, true)).modname;
+    } catch (err) {
+        catchModtoolError(err);
         const noModule = () => window.showErrorMessage("No GNURadio Module detected in the open workspace");
         context.subscriptions.push(commands.registerCommand(`${extId}.getModuleInfo`, noModule));
         return;

@@ -5,6 +5,9 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Added
+- Initial module info query now detects if Python modules for GNURadio are not installed (ImportError)
+
 ### Changed
 - Removed `python-shell` dependency; replaced it with own `PythonShell` class
 
