@@ -48,6 +48,9 @@ If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** t
 | ![Edit or Compile/Run Flowgraph](./imgs/flowgraph_edit.png) |
 
 ## Extension settings
-- **GNURadio Companion command** (default: `gnuradio-companion`);
-- **GNURadio CLI compiler command** (default: `grcc`);
+- **GNURadio Prefix**: absolute path to your GNURadio installation;  
+Please use the output of `gnuradio-config-info --prefix`; see [InstallingGR](https://wiki.gnuradio.org/index.php?title=InstallingGR) for more details
+- **Python** - for virtual environments:
+  - **Default interpreter**: path to an executable (e.g. `~/.local/bin/python`);
+  - **Default PYTHONPATH**: paths to library directories (e.g. `~/.local/lib/python3.11/site-packages`);
 - **Check for XML block definitions** on startup (default: disabled).

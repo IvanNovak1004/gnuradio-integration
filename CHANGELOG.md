@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.3.2] - 2023-12-26
 ### Added
 - Initial module info query now detects if Python modules for GNURadio are not installed (ImportError)
 - Added Python interpreter, PYTHONPATH and GNURadio Prefix settings to extension config
@@ -129,7 +131,8 @@ a workaround to activate the extension when the module has no blocks yet
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.2...v0.3.2
 [0.3.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.2.1...v0.2.2

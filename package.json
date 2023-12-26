@@ -2,7 +2,7 @@
     "name": "gnuradio-integration",
     "displayName": "GNURadio Integration",
     "description": "GNURadio Integration",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "license": "MIT",
     "publisher": "AsriFox",
     "engines": {
@@ -413,7 +413,7 @@
                 "gnuradio-integration.gnuradioPrefix": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in PATH."
+                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in PATH.  \nSee [InstallingGR](https://wiki.gnuradio.org/index.php?title=InstallingGR) for more details."
                 },
                 "gnuradio-integration.python.defaultInterpreter": {
                     "type": "string",
