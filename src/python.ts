@@ -1,4 +1,5 @@
 import { OutputChannel, window } from 'vscode';
+import { ActiveEnvironmentPathChangeEvent, PythonExtension } from '@vscode/python-extension';
 import { execSync, spawn } from 'child_process';
 import { EOL, platform } from 'os';
 import { resolve } from 'path';
@@ -17,21 +18,37 @@ export class PythonShellError extends Error {
     }
 }
 
-export function findPython(pythonInterp?: string) {
-    const python = pythonInterp?.length ? pythonInterp : 'python';
-    if (platform() === 'win32') {
-        // TODO: check for Python executable
-        return python;
+export async function getPythonEnv() {
+    const api = await PythonExtension.api();
+    const envPath = api.environments.getActiveEnvironmentPath();
+    const environ = await api.environments.resolveEnvironment(envPath);
+    return {
+        pythonInterp: environ?.executable.uri!.fsPath,
+        path: environ?.environment?.folderUri.fsPath,
+        onDidChange: api.environments.onDidChangeActiveEnvironmentPath,
+    };
+}
+
+function findPythonUnix(pythonInterp?: string) {
+    const which = (file: string) =>
+        execSync(`command -v ${file}`, { encoding: 'utf8' }).trim();
+    if (pythonInterp) {
+        return which(pythonInterp);
     }
     try {
-        return execSync(
-            `command -v ${python}`,
-            { encoding: 'utf8' }
-        ).trim();
-    } catch (_) {
-        return 'python3';
+        return which('python');
+    }
+    catch (_) {
+        return which('python3');
     }
 }
+
+function findPythonWin32(pythonInterp?: string) {
+    // TODO: check for Python executable
+    return pythonInterp ?? 'python';
+}
+
+export const findPython = platform() === 'win32' ? findPythonWin32 : findPythonUnix;
 
 export function getPythonpath(pythonInterp: string, gnuradioPrefix?: string, defaultPythonpath?: string[]) {
     const pythonVersion = execSync(`${pythonInterp} --version`, { encoding: 'utf8' });

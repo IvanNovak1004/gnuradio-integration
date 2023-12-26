@@ -413,7 +413,7 @@
                 "gnuradio-integration.gnuradioPrefix": {
                     "type": "string",
                     "default": "",
-                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in PATH.  \nSee [InstallingGR](https://wiki.gnuradio.org/index.php?title=InstallingGR) for more details."
+                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in the selected Python environment (if `ms-python.python` extension is installed) or in PATH.  \nSee [InstallingGR](https://wiki.gnuradio.org/index.php?title=InstallingGR) for more details."
                 },
                 "gnuradio-integration.python.defaultInterpreter": {
                     "type": "string",
@@ -490,7 +490,11 @@
         "mocha": "^10.0.0",
         "typescript": "^4.7.2"
     },
+    "dependencies": {
+        "@vscode/python-extension": "^1.0.5"
+    },
     "extensionDependencies": [
+        "ms-python.python",
         "vscode.git"
     ]
 }

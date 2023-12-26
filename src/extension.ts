@@ -20,8 +20,33 @@ export async function activate(context: ExtensionContext) {
     const cwd = workspace.workspaceFolders?.length
         ? workspace.workspaceFolders[0].uri.fsPath
         : undefined;
-    const pythonInterp = python.findPython(getConfig<string>('python.defaultInterpreter'));
-    const gnuradioPrefix = getConfig<string>('gnuradioPrefix');
+    let pythonInterp: string;
+    let gnuradioPrefix = getConfig<string>('gnuradioPrefix');
+    try {
+        const pythonEnv = await python.getPythonEnv();
+        pythonEnv.onDidChange(async e => {
+            if (e.path === pythonInterp || e.path === pythonEnv.path) {
+                return;
+            }
+            if (await window.showWarningMessage('Python environment has changed.', 'Reload window') === 'Reload window') {
+                commands.executeCommand('workbench.action.reloadWindow');
+            }
+        });
+        gnuradioPrefix ??= pythonEnv.path;  // venv and conda environments
+        pythonInterp = python.findPython(pythonEnv.pythonInterp);
+    } catch (err) {
+        if (err instanceof TypeError) {
+            pythonInterp = python.findPython(getConfig<string>('python.defaultInterpreter'));
+            window.showWarningMessage(`Python extension not found; using default interpreter (${pythonInterp})`, 'Find extension')
+                .then(value => {
+                    if (value === 'Find extension') {
+                        commands.executeCommand('workbench.extensions.search', 'ms-python.python');
+                    }
+                });
+        } else {
+            throw err;
+        }
+    }
     const pythonpath = python.getPythonpath(
         pythonInterp, gnuradioPrefix,
         getConfig<string[]>('python.defaultPythonpath'));
