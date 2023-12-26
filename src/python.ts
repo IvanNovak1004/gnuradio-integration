@@ -53,20 +53,37 @@ export function getPythonpath(pythonInterp: string, gnuradioPrefix?: string, def
 
 export class PythonShell {
     constructor(
-        readonly pythonPath: string,
+        readonly pythonInterp: string,
         readonly scriptPath: string,
+        readonly env: { [key: string]: string },
         readonly outputChannel: OutputChannel,
     ) { }
 
-    public static default(scriptPath: string, displayName: string, pythonPath?: string) {
-        pythonPath = findPython(pythonPath);
-        return new PythonShell(pythonPath, scriptPath, window.createOutputChannel(displayName));
+    public static default(
+        scriptPath: string,
+        displayName: string,
+        pythonInterp: string,
+        options: {
+            pythonpath?: string,
+            gnuradioPrefix?: string,
+        } = {}) {
+        let env: { [key: string]: string } = {};
+        if (options.pythonpath) {
+            env['PYTHONPATH'] = options.pythonpath;
+        }
+        if (options.gnuradioPrefix) {
+            env['GR_PREFIX'] = options.gnuradioPrefix;
+        }
+        return new PythonShell(
+            pythonInterp, scriptPath, env,
+            window.createOutputChannel(displayName),
+        );
     }
 
     run(command: string[], cwd?: string, encoding?: BufferEncoding) {
         command[0] = resolve(this.scriptPath, command[0]);
         return new Promise<string>((resolve, reject) => {
-            const py = spawn(this.pythonPath, command, { cwd });
+            const py = spawn(this.pythonInterp, command, { cwd, env: this.env });
             let stdout: string[] = [], stderr: string[] = [];
             py.stdout.setEncoding(encoding ?? 'utf8');
             py.stdout.on('data', (data: string) => {
