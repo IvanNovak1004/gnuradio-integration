@@ -7,9 +7,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Initial module info query now detects if Python modules for GNURadio are not installed (ImportError)
+- Added Python interpreter, PYTHONPATH and GNURadio Prefix settings to extension config
 
 ### Changed
 - Removed `python-shell` dependency; replaced it with own `PythonShell` class
+
+### Deprecated
+- Removed `gnuradio-companion` and `grcc` executable path settings in favor of GNURadio Prefix
 
 ## [0.3.1] - 2023-12-20
 ### Added

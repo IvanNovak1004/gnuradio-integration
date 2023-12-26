@@ -4,8 +4,8 @@ import {
     Uri, TreeItem, EventEmitter,
 } from 'vscode';
 import { basename } from 'path';
-import { PythonShell, PythonShellError } from './python';
-import { exec, execOnFile } from './shellTask';
+import * as python from './python';
+import * as shellTask from './shellTask';
 import * as blocks from './blockFilter';
 import * as modtool from './modtool';
 import { GNURadioModuleTreeDataProvider } from './moduleTree';
@@ -20,6 +20,12 @@ export async function activate(context: ExtensionContext) {
     const cwd = workspace.workspaceFolders?.length
         ? workspace.workspaceFolders[0].uri.fsPath
         : undefined;
+    const pythonInterp = python.findPython(getConfig<string>('python.defaultInterpreter'));
+    const gnuradioPrefix = getConfig<string>('gnuradioPrefix');
+    const pythonpath = python.getPythonpath(
+        pythonInterp, gnuradioPrefix,
+        getConfig<string[]>('python.defaultPythonpath'));
+    const execOptions = { cwd, pythonpath, gnuradioPrefix };
 
     /** 
      * Open GNURadio Companion application.
@@ -28,10 +34,19 @@ export async function activate(context: ExtensionContext) {
      */
     const openGnuradioCompanion = commands.registerCommand(
         `${extId}.openGnuradioCompanion`,
-        () => {
-            const cmd = getConfig<string>('companion.cmd') ?? 'gnuradio-companion';
-            exec(`"${cmd}"`, cwd);
-        });
+        () => shellTask.exec('gnuradio-companion', execOptions));
+
+    const execOnFlowgraph = async (cmd: string, fileUri?: Uri) => {
+        try {
+            await shellTask.execOnFile(cmd, fileUri, { fileExtension: '.grc', ...execOptions });
+        } catch (err: unknown) {
+            if (err instanceof URIError) {
+                window.showErrorMessage(err.message);
+            } else {
+                throw err;
+            }
+        }
+    };
 
     /** 
      * Edit the file in GNURadio Companion application.
@@ -40,19 +55,7 @@ export async function activate(context: ExtensionContext) {
      */
     const editInGnuradioCompanion = commands.registerCommand(
         `${extId}.editInGnuradioCompanion`,
-        async (fileUri?: Uri) => {
-            try {
-                const cmd = getConfig<string>('companion.cmd') ?? 'gnuradio-companion';
-                await execOnFile(`"${cmd}"`, fileUri, '.grc');
-            }
-            catch (err: unknown) {
-                if (err instanceof URIError) {
-                    window.showErrorMessage(err.message);
-                } else {
-                    throw err;
-                }
-            }
-        });
+        (fileUri?: Uri) => execOnFlowgraph('gnuradio-companion', fileUri));
 
     /**
      * Compile the GRC flowgraph file.
@@ -61,19 +64,7 @@ export async function activate(context: ExtensionContext) {
      */
     const compileFlowgraph = commands.registerCommand(
         `${extId}.compileFlowgraph`,
-        async (fileUri?: Uri) => {
-            try {
-                const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
-                await execOnFile(`"${cmd}"`, fileUri, '.grc');
-            }
-            catch (err: unknown) {
-                if (err instanceof URIError) {
-                    window.showErrorMessage(err.message);
-                } else {
-                    throw err;
-                }
-            }
-        });
+        (fileUri?: Uri) => execOnFlowgraph('grcc', fileUri));
 
     /**
      * Run the GRC flowgraph file.
@@ -82,19 +73,7 @@ export async function activate(context: ExtensionContext) {
      */
     const runFlowgraph = commands.registerCommand(
         `${extId}.runFlowgraph`,
-        async (fileUri?: Uri) => {
-            try {
-                const cmd = getConfig<string>('compiler.cmd') ?? 'grcc';
-                await execOnFile(`"${cmd}" -r`, fileUri, '.grc');
-            }
-            catch (err: unknown) {
-                if (err instanceof URIError) {
-                    window.showErrorMessage(err.message);
-                } else {
-                    throw err;
-                }
-            }
-        });
+        (fileUri?: Uri) => execOnFlowgraph('grcc -r', fileUri));
 
     context.subscriptions.push(
         openGnuradioCompanion,
@@ -117,7 +96,7 @@ export async function activate(context: ExtensionContext) {
     );
 
     const scriptPath = Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
-    const shell = PythonShell.default(scriptPath, context.extension.packageJSON.displayName);
+    const shell = python.PythonShell.default(scriptPath, context.extension.packageJSON.displayName);
 
     context.subscriptions.push(
         commands.registerCommand(
@@ -140,7 +119,7 @@ export async function activate(context: ExtensionContext) {
                 return output;
             },
             (err: unknown) => {
-                if (err instanceof PythonShellError) {
+                if (err instanceof python.PythonShellError) {
                     return err;
                 } else {
                     throw err;

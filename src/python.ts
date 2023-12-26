@@ -2,6 +2,7 @@ import { OutputChannel, window } from 'vscode';
 import { execSync, spawn } from 'child_process';
 import { EOL, platform } from 'os';
 import { resolve } from 'path';
+import { env } from 'process';
 
 export class PythonShellError extends Error {
     log?: string;
@@ -16,6 +17,40 @@ export class PythonShellError extends Error {
     }
 }
 
+export function findPython(pythonInterp?: string) {
+    const python = pythonInterp?.length ? pythonInterp : 'python';
+    if (platform() === 'win32') {
+        // TODO: check for Python executable
+        return python;
+    }
+    try {
+        return execSync(
+            `command -v ${python}`,
+            { encoding: 'utf8' }
+        ).trim();
+    } catch (_) {
+        return 'python3';
+    }
+}
+
+export function getPythonpath(pythonInterp: string, gnuradioPrefix?: string, defaultPythonpath?: string[]) {
+    const pythonVersion = execSync(`${pythonInterp} --version`, { encoding: 'utf8' });
+    if (!/Python 3\.\d+\.\d+/.test(pythonVersion)) {
+        throw Error(`Unrecognized Python version: ${pythonVersion}`);
+    }
+    let pythonpath = defaultPythonpath ?? [];
+    if (gnuradioPrefix?.length) {
+        pythonpath.push(resolve(
+            gnuradioPrefix, 'lib',
+            `python3.${pythonVersion.split('.')[1]}`,
+            'site-packages'));
+    }
+    if (env['PYTHONPATH']) {
+        pythonpath.push(env['PYTHONPATH']);
+    }
+    return pythonpath.join(':');
+}
+
 export class PythonShell {
     constructor(
         readonly pythonPath: string,
@@ -23,15 +58,8 @@ export class PythonShell {
         readonly outputChannel: OutputChannel,
     ) { }
 
-    public static default(scriptPath: string, displayName: string) {
-        let pythonPath = 'python';
-        if (platform() !== 'win32') {
-            try {
-                pythonPath = execSync(`command -v ${pythonPath}`, { encoding: 'utf8' }).trim();
-            } catch (_) {
-                pythonPath = 'python3';
-            }
-        }
+    public static default(scriptPath: string, displayName: string, pythonPath?: string) {
+        pythonPath = findPython(pythonPath);
         return new PythonShell(pythonPath, scriptPath, window.createOutputChannel(displayName));
     }
 

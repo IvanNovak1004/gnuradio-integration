@@ -410,15 +410,36 @@
         "configuration": {
             "title": "GNURadio Integration",
             "properties": {
+                "gnuradio-integration.gnuradioPrefix": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in PATH."
+                },
+                "gnuradio-integration.python.defaultInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Default Python interpreter command  \nOn Unix systems, `command -v` is used to determine the interpreter.  \nIf this property is not set, then `python` or `python3` is presumed to be in PATH."
+                },
+                "gnuradio-integration.python.defaultPythonpath": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": [ ],
+                    "markdownDescription": "Default `PYTHONPATH`  \nA collection of absolute paths to directories with additional Python libraries that can be imported by the interpreter."
+                },
                 "gnuradio-integration.companion.cmd": {
                     "type": "string",
                     "default": "gnuradio-companion",
-                    "description": "GNURadio Companion command"
+                    "description": "GNURadio Companion command",
+                    "deprecationMessage": "Please use GNURadio Prefix instead"
                 },
                 "gnuradio-integration.compiler.cmd": {
                     "type": "string",
                     "default": "grcc",
-                    "description": "GNURadio CLI compiler command"
+                    "description": "GNURadio CLI compiler command",
+                    "deprecationMessage": "Please use GNURadio Prefix instead"
                 },
                 "gnuradio-integration.modtool.checkXml": {
                     "type": "boolean",

@@ -1,17 +1,40 @@
-import { dirname, extname } from 'path';
+import { dirname, extname, resolve } from 'path';
 import * as vscode from 'vscode';
 
-export function exec(cmd: string, cwd?: string) {
+export function exec(
+    cmd: string, options: {
+        cwd?: string,
+        // pythonInterp?: string,
+        pythonpath?: string,
+        gnuradioPrefix?: string,
+    } = {}) {
+    let env: { [key: string]: string } = {};
+    if (options.pythonpath) {
+        env['PYTHONPATH'] = options.pythonpath;
+    }
+    if (options.gnuradioPrefix) {
+        env['GR_PREFIX'] = options.gnuradioPrefix;
+        let command = cmd.split(' ');
+        command[0] = resolve(options.gnuradioPrefix, 'bin', command[0]);
+        cmd = command.join(' ');
+    }
     return vscode.tasks.executeTask(new vscode.Task(
         { type: 'shell' },
         vscode.TaskScope.Workspace,
         'shell',
         'gnuradio',
-        new vscode.ShellExecution(cmd, { cwd })
+        new vscode.ShellExecution(cmd, { cwd: options.cwd, env })
     ));
 }
 
-export async function execOnFile(cmd: string, fileUri?: vscode.Uri, fileExtension?: string | undefined) {
+export async function execOnFile(
+    cmd: string,
+    fileUri?: vscode.Uri,
+    options: {
+        fileExtension?: string | undefined,
+        pythonpath?: string,
+        gnuradioPrefix?: string,
+    } = {}) {
     if (!fileUri) {
         fileUri = vscode.window.activeTextEditor?.document.uri;
         // TODO: file picker?
@@ -31,8 +54,9 @@ export async function execOnFile(cmd: string, fileUri?: vscode.Uri, fileExtensio
             throw URIError("File required, but something else was provided");
     }
     let path = fileUri.fsPath;
-    if (fileExtension && extname(path) !== fileExtension) {
-        throw URIError(`Expected file extension "${fileExtension}", but found "${extname(path)}"`);
+    if (options.fileExtension && extname(path) !== options.fileExtension) {
+        throw URIError(`Expected file extension "${options.fileExtension}", but found "${extname(path)}"`);
     }
-    return exec(`${cmd} "${path}"`, dirname(path));
+    return exec(`${cmd} "${path}"`, { cwd: dirname(path), ...options });
+}
 }
