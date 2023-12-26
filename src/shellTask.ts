@@ -59,4 +59,18 @@ export async function execOnFile(
     }
     return exec(`${cmd} "${path}"`, { cwd: dirname(path), ...options });
 }
+
+export function onEndTaskShellCommand(e: vscode.TaskProcessEndEvent) {
+    if (e.execution.task.source !== 'gnuradio') {
+        return;
+    }
+    if (e.exitCode && e.exitCode !== 0) {
+        vscode.window.showErrorMessage(
+            `Task finished with error code ${e.exitCode}; ` +
+            'check the terminal output for details');
+        return;
+    }
+    return e.execution.task.execution instanceof vscode.ShellExecution
+        ? e.execution.task.execution.commandLine // .command
+        : undefined;
 }

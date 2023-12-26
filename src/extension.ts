@@ -3,7 +3,7 @@ import {
     ExtensionContext, ConfigurationTarget,
     Uri, TreeItem, EventEmitter,
 } from 'vscode';
-import { basename } from 'path';
+import { basename, sep } from 'path';
 import * as python from './python';
 import * as shellTask from './shellTask';
 import * as blocks from './blockFilter';
@@ -81,13 +81,8 @@ export async function activate(context: ExtensionContext) {
         compileFlowgraph,
         runFlowgraph,
         tasks.onDidEndTaskProcess(e => {
-            if (e.execution.task.source !== 'gnuradio') {
-                return;
-            }
-            if (e.exitCode && e.exitCode !== 0) {
-                window.showErrorMessage(
-                    `Task finished with error code ${e.exitCode}; check the terminal output for details`);
-            } else if (e.execution.task.detail?.startsWith('grcc')) {
+            const taskCmd = shellTask.onEndTaskShellCommand(e);
+            if (RegExp(`[\\${sep}]?(grcc)`).test(taskCmd ?? '')) {
                 // TODO: C++ flowgraph?
                 // TODO: read task parameters to find the compiled file
                 window.showInformationMessage('Flowgraph compilation was successfull');
