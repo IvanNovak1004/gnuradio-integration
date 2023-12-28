@@ -22,6 +22,9 @@ export async function activate(context: ExtensionContext) {
         : undefined;
     let pythonInterp: string;
     let gnuradioPrefix = getConfig<string>('gnuradioPrefix');
+    if (!gnuradioPrefix?.length) {
+        gnuradioPrefix = undefined;
+    }
     try {
         const pythonEnv = await python.getPythonEnv();
         pythonEnv.onDidChange(async e => {

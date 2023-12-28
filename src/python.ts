@@ -45,7 +45,7 @@ function findPythonUnix(pythonInterp?: string) {
 
 function findPythonWin32(pythonInterp?: string) {
     // TODO: check for Python executable
-    return pythonInterp ?? 'python';
+    return pythonInterp?.length ? pythonInterp : 'python';
 }
 
 export const findPython = platform() === 'win32' ? findPythonWin32 : findPythonUnix;
