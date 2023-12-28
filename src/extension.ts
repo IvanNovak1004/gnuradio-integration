@@ -137,10 +137,9 @@ export async function activate(context: ExtensionContext) {
     context.subscriptions.push(modtoolEvent);
     const execModtool: modtool.ModtoolClosure = async (cmd, ...args) => {
         shell.outputChannel.appendLine(`\n[Running] gr_modtool ${cmd} ${args.join(' ')}`);
-        const command = [cmd + '.py', ...args];
-        return await shell.run(command, cwd).then(
+        return await shell.run([cmd + '.py', ...args], cwd).then(
             output => {
-                modtoolEvent.fire(command);
+                modtoolEvent.fire([cmd, ...args]);
                 return output;
             },
             (err: unknown) => {
