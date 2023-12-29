@@ -232,7 +232,7 @@ export async function activate(context: ExtensionContext) {
                 if (!blocks.filterXmlBlocks(blockUri.fsPath)) {
                     return window.showErrorMessage(`Invalid file type: expected XML, found ${basename(blockUri.fsPath)}`);
                 }
-                const blockName = blocks.mapGrcBlocks('.xml')(blockUri.fsPath);
+                const blockName = blocks.mapGrcBlocks(moduleName, '.xml')(blockUri.fsPath);
                 return modtool.convertXmlToYaml(execModtool, cwd, moduleName, blockName)
                     .catch(catchModtoolError);
             }),
