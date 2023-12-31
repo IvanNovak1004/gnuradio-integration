@@ -318,7 +318,10 @@ export async function createBlock(execModtool: ModtoolClosure, extRoot: Uri, cwd
     if (state.addPythonTest) {
         args.push('--add-python-qa');
     }
-    await execModtool('add', ...args);
+    const result = await execModtool('add', ...args);
+    if (result instanceof PythonShellError) {
+        throw new ModtoolError(result.log ?? result.message);
+    }
     const blockPath = state.language!.description === 'python'
         ? resolve(cwd, 'python', moduleName, `${state.name}.py`)
         : resolve(cwd, 'include', 'gnuradio', moduleName, `${state.name}.h`);
@@ -445,7 +448,10 @@ export async function makeYamlFromImpl(execModtool: ModtoolClosure, cwd: string,
             return;
         }
     }
-    await execModtool('makeyaml', blockName);
+    const result = await execModtool('makeyaml', blockName);
+    if (result instanceof PythonShellError) {
+        throw new ModtoolError(result.log ?? result.message);
+    }
     let blockYamlPath = cppBlocks.includes(blockName)
         ? join('grc', `${moduleName}_${blockName}.block.yml`)
         : 'grc';
@@ -496,7 +502,10 @@ export async function disableBlock(execModtool: ModtoolClosure, cwd: string, mod
     const confirm = await window.showWarningMessage(
         warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
     if (confirm === 'Yes') {
-        await execModtool('disable', blockName);
+        const result = await execModtool('disable', blockName);
+        if (result instanceof PythonShellError) {
+            throw new ModtoolError(result.log ?? result.message);
+        }
         return window.showInformationMessage(successMessage);
     }
 }
@@ -546,7 +555,10 @@ export async function removeBlock(execModtool: ModtoolClosure, cwd: string, modu
     const confirm = await window.showWarningMessage(
         warningMessage, { detail: detailMessage.join('\n- '), modal: true }, 'Yes');
     if (confirm === 'Yes') {
-        await execModtool('rm', blockName);
+        const result = await execModtool('rm', blockName);
+        if (result instanceof PythonShellError) {
+            throw new ModtoolError(result.log ?? result.message);
+        }
         return window.showInformationMessage(successMessage);
     }
 }
@@ -589,7 +601,10 @@ export async function renameBlock(execModtool: ModtoolClosure, cwd: string, modu
         { detail: blockFiles.join('\n- '), modal: true },
         'Yes');
     if (confirm === 'Yes') {
-        await execModtool('rename', blockName, newBlockName);
+        const result = await execModtool('rename', blockName, newBlockName);
+        if (result instanceof PythonShellError) {
+            throw new ModtoolError(result.log ?? result.message);
+        }
         return window.showInformationMessage(`Block "${blockName}" was renamed to "${newBlockName}"`);
     }
 }
