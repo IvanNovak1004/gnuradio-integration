@@ -12,6 +12,7 @@
 if __name__ != "__main__":
     exit(2)
 
+from glob import glob
 from sys import stderr
 from gnuradio.modtool.core import ModToolGenBindings, ModToolException
 from argparse import ArgumentParser
@@ -35,7 +36,16 @@ argparser.add_argument(
 argparser.add_argument("-u", "--update-hash-only", action="store_true")
 args = argparser.parse_args()
 
+
+def get_failfile() -> list[str]:
+    try:
+        return open(glob("./python/*/bindings/failed_conversions.txt")[0]).readlines()
+    except Exception:
+        return []
+
+
 try:
+    failfile = get_failfile()
     tool = ModToolGenBindings(
         args.blockname,
         addl_includes=args.addl_includes,
@@ -47,6 +57,9 @@ try:
     tool.validate()
     tool.info["blockname"] = None
     tool.run()
+    new_failfile = get_failfile()
+    if len(new_failfile) > len(failfile):
+        raise ModToolException(new_failfile[-1])
 except ModToolException as e:
     print(e, file=stderr)
     exit(1)

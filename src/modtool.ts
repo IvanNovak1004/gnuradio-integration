@@ -362,8 +362,10 @@ export async function createPythonBindings(execModtool: ModtoolClosure, cwd: str
         const matchingBlocks = cppBlocks.filter(block => re.test(block));
         successMessage = 'Python bindings created for blocks: ', matchingBlocks.join(', ');
     }
-    await execModtool('bind', blockName);
-    // TODO: check for failed conversions
+    const result = await execModtool('bind', blockName);
+    if (result instanceof PythonShellError) {
+        throw new ModtoolError(result.log ?? result.message);
+    }
     return window.showInformationMessage(successMessage);
 }
 
