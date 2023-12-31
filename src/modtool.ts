@@ -395,12 +395,22 @@ export async function convertXmlToYaml(execModtool: ModtoolClosure, cwd: string,
         });
     }
     if (blockName) {
-        await execModtool('update', blockName);
+        const result = await execModtool('update', blockName);
+        if (result instanceof PythonShellError) {
+            throw new ModtoolError(
+                result.log?.trimEnd().split(EOL).pop()
+                ?? result.message);
+        }
         return window.showInformationMessage(`Block definition written to "grc/${moduleName}_${blockName}.block.yml"`);
     }
     const updateAll = await window.showWarningMessage('No block name provided! Update all definitions?', 'Yes', 'No');
     if (updateAll === 'Yes') {
-        await execModtool('update', '--complete');
+        const result = await execModtool('update', '--complete');
+        if (result instanceof PythonShellError) {
+            throw new ModtoolError(
+                result.log?.trimEnd().split(EOL).pop()
+                ?? result.message);
+        }
         return window.showInformationMessage(`Block definitions written to "grc/"`);
     }
 }

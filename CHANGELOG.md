@@ -7,7 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 ### Added
 - Added support of Python interpreters/environments selected with `ms-python.python` extension ([Open VSX Registry](https://open-vsx.org/extension/ms-python/python), [VS marketplace](https://marketplace.visualstudio.com/items?itemName=ms-python.python))
-- Added error handling for 'Create Python Bindings' command
+- Added error handling for 'Create Python Bindings' and 'Convert XML to YAML' commands
 
 ## [0.3.2] - 2023-12-26
 ### Added
