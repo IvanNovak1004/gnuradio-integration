@@ -34,7 +34,7 @@ If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** t
 ## Command palette
 ![Command palette](./imgs/command_palette.png)
 
-**WIP**: Commands marked with 🪣 can use regular expressions to process multiple blocks at once. Picking the "Regular expression" option selects all blocks with names containing the fragment and any symbols before and after it (uses `.*{input}.*` when `{input}` is entered).
+**WIP**: Commands marked with 🪣 can use regular expressions to process multiple blocks at once. Picking the "Regular expression" option selects all blocks with names containing the fragment and any symbols before and after it (uses `.*{input}.*` when `{input}` is entered).  
 ![Regular expressions](./imgs/modtool_regex.png)
 
 ## Explorer context menu
@@ -46,6 +46,16 @@ If a GNURadio OOT module is detected in the workspace, the **GNURadio Module** t
 | Flowgraph |
 |-|
 | ![Edit or Compile/Run Flowgraph](./imgs/flowgraph_edit.png) |
+
+## GNURadio Prefix and Python Environment
+If your GNURadio is not installed system-wide (e.g. from `apt`), then it might not be discoverable by the extension. To check if the installation is available, try running `gnuradio-config-info --prefix` in your terminal.
+
+For [Conda-based installations](https://wiki.gnuradio.org/index.php?title=CondaInstall) you can use the VSCode Python extension (`ms-python.python`: [Open VSX Registry](https://open-vsx.org/extension/ms-python/python), [VS marketplace](https://marketplace.visualstudio.com/items?itemName=ms-python.python)) to activate your environment with GNURadio installation in it.  
+![Python: Select Interpreter](./imgs/python_interpreters.png)
+
+When building from source on [Linux](https://wiki.gnuradio.org/index.php?title=LinuxInstall#From_Source), [Windows](https://wiki.gnuradio.org/index.php?title=WindowsInstall#Installation_Options) or [Mac OS](https://wiki.gnuradio.org/index.php?title=MacInstall#From_Source), you can select your install location. To make this installation available to the extension, you can set GNURadio Prefix through extension settings using the output of `gnuradio-config-info --prefix`.
+
+If you don't use the VSCode Python extension, then you can point to your Python interpreter and libraries manually through extension settings.
 
 ## Extension settings
 - **GNURadio Prefix**: absolute path to your GNURadio installation;  
