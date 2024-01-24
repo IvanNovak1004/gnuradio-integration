@@ -5,6 +5,8 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+### Fixed
+- Fixed modtool scripts being excluded from the published build
 
 ## [0.3.3] - 2023-12-31
 ### Added
