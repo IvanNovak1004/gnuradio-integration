@@ -1,102 +1,450 @@
 {
-  "name": "gnuradio-integration",
-	"displayName": "GNURadio-integration",
-	"description": "GNURadio integration",
-	"version": "0.1.1",
-	"license": "MIT",
-	"publisher": "ivannovak1004",
-	"engines": {
-		"vscode": "^1.68.0"
-	},
-	"repository": {
+    "name": "gnuradio-integration",
+    "displayName": "GNURadio Integration",
+    "description": "GNURadio Integration",
+    "version": "0.3.3",
+    "license": "MIT",
+    "publisher": "AsriFox",
+    "engines": {
+        "vscode": "^1.81.0"
+    },
+    "repository": {
         "type": "git",
-        "url": "https://github.com/IvanNovak1004/gnuradio-integration.git"
-	},
-	"icon": "imgs/gnuradio-integration-icon.png",
-	"homepage": "https://github.com/IvanNovak1004/gnuradio-integration/blob/master/README.md",
-	"keywords": [
-	"gnuradio",
-	"radio",
-	"grc"
+        "url": "https://github.com/AsriFox/gnuradio-integration.git"
+    },
+    "icon": "imgs/gnuradio-integration-icon.png",
+    "homepage": "https://github.com/AsriFox/gnuradio-integration/blob/master/README.md",
+    "keywords": [
+        "gnuradio",
+        "radio",
+        "grc"
     ],
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-        "*"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "workspaceContains:**/*.grc",
+        "workspaceContains:**/*.block.yml"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
                 "command": "gnuradio-integration.openGnuradioCompanion",
-                "title": "GNURadio: Open Gnuradio Companion"
+                "title": "Open the application",
+                "category": "GNURadio Companion"
             },
             {
                 "command": "gnuradio-integration.editInGnuradioCompanion",
-                "title": "GNURadio: Edit In Gnuradio Companion"
-            },
-            {
-                "command": "gnuradio-integration.runFlowgraph",
-                "title": "GNURadio: Compile and Run Flowgraph"
+                "title": "Edit Flowgraph",
+                "category": "GNURadio Companion",
+                "icon": "$(circuit-board)"
             },
             {
                 "command": "gnuradio-integration.compileFlowgraph",
-                "title": "GNURadio: Compile Flowgraph"
+                "title": "Compile Flowgraph",
+                "category": "GNURadio Compiler",
+                "icon": "$(wrench)"
+            },
+            {
+                "command": "gnuradio-integration.runFlowgraph",
+                "title": "Compile and Run Flowgraph",
+                "category": "GNURadio Compiler",
+                "icon": "$(run)"
+            },
+            {
+                "command": "gnuradio-integration.getModuleInfo",
+                "title": "Query Info",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createModule",
+                "title": "Create OOT Module",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createBlock",
+                "title": "Create Block",
+                "category": "GNURadio Module",
+                "icon": "$(add)"
+            },
+            {
+                "command": "gnuradio-integration.createPythonBindings",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.renameBlock",
+                "title": "Rename Block",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.removeBlock",
+                "title": "Remove Block",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.convertXmlToYaml",
+                "title": "Convert XML to YAML",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createPythonBindingsInExplorer",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.convertXmlToYamlInExplorer",
+                "title": "Convert XML to YAML",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.renameBlockInTree",
+                "title": "Rename Block",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.removeBlockInTree",
+                "title": "Remove Block",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.createPythonBindingsInTree",
+                "title": "Create Python Bindings",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.convertXmlToYamlInTree",
+                "title": "Convert XML to YAML",
+                "category": "GNURadio Module"
+            },
+            {
+                "command": "gnuradio-integration.refreshView",
+                "title": "Refresh",
+                "category": "GNURadio Module View",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenBeside",
+                "title": "Open to the Side",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenFolder",
+                "title": "Open Containing Folder",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenWith",
+                "title": "Open With...",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileOpenTimeline",
+                "title": "Open Timeline",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCopyPath",
+                "title": "Copy Path",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCopyPathRelative",
+                "title": "Copy Relative Path",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileSelectForCompare",
+                "title": "Select for Compare",
+                "category": "File"
+            },
+            {
+                "command": "gnuradio-integration.fileCompareSelected",
+                "title": "Compare with Selected",
+                "category": "File"
             }
         ],
         "menus": {
             "explorer/context": [
                 {
-                    "command": "gnuradio-integration.openGnuradioCompanion",
-                    "when": "filesExplorerFocus == true",
-                    "group": "gnuradio-integration@1"
-                },
-                {
                     "command": "gnuradio-integration.editInGnuradioCompanion",
                     "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@2"
-                },
-                {
-                    "command": "gnuradio-integration.runFlowgraph",
-                    "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@3"
+                    "group": "gnuradio-integration"
                 },
                 {
                     "command": "gnuradio-integration.compileFlowgraph",
                     "when": "resourceScheme == file && resourceExtname == .grc",
-                    "group": "gnuradio-integration@4"
+                    "group": "gnuradio-integration"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "gnuradio-integration"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindingsInExplorer",
+                    "when": "gnuradio-integration.moduleFound && resourceScheme == file && resourceExtname == .h && resourceDirname =~ /include[\\\\\\/]gnuradio[\\\\\\/]/ && resourceFilename != api.h",
+                    "group": "gnuradio-integration"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYamlInExplorer",
+                    "when": "resourceScheme == file && resourceExtname == .xml",
+                    "group": "gnuradio-integration"
                 }
             ],
             "commandPalette": [
                 {
                     "command": "gnuradio-integration.editInGnuradioCompanion",
-                    "when": "false"
-                },
-                {
-                    "command": "gnuradio-integration.runFlowgraph",
-                    "when": "false"
+                    "when": "resourceScheme == file && resourceExtname == .grc"
                 },
                 {
                     "command": "gnuradio-integration.compileFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                },
+                {
+                    "command": "gnuradio-integration.createBlock",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindings",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlock",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlock",
+                    "when": "gnuradio-integration.moduleFound"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYaml",
+                    "when": "(resourceScheme == file && resourceExtname == .xml) || (gnuradio-integration.moduleFound && gnuradio-integration.xmlFound)"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindingsInExplorer",
                     "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYamlInExplorer",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlockInTree",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlockInTree",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.createPythonBindingsInTree",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYamlInTree",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenBeside",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenFolder",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenWith",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenTimeline",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPath",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPathRelative",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileSelectForCompare",
+                    "when": "false"
+                },
+                {
+                    "command": "gnuradio-integration.fileCompareSelected",
+                    "when": "false"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "gnuradio-integration.editInGnuradioCompanion",
+                    "when": "resourceScheme == file && resourceExtname == .grc",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title/run": [
+                {
+                    "command": "gnuradio-integration.compileFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                },
+                {
+                    "command": "gnuradio-integration.runFlowgraph",
+                    "when": "resourceScheme == file && resourceExtname == .grc"
+                }
+            ],
+            "view/title": [
+                {
+                    "command": "gnuradio-integration.refreshView",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "gnuradio-integration.createBlock",
+                    "when": "view == gnuradioModule",
+                    "group": "navigation@1"
+                }
+            ],
+            "view/item/context": [
+                {
+                    "command": "gnuradio-integration.createPythonBindingsInTree",
+                    "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.cpp/",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "gnuradio-integration.convertXmlToYamlInTree",
+                    "when": "view == gnuradioModule && viewItem =~ /^block/ && viewItem =~ /\\.xml/",
+                    "group": "z_commands"
+                },
+                {
+                    "command": "gnuradio-integration.renameBlockInTree",
+                    "when": "view == gnuradioModule && viewItem =~ /^block/",
+                    "group": "7_modification@1"
+                },
+                {
+                    "command": "gnuradio-integration.removeBlockInTree",
+                    "when": "view == gnuradioModule && viewItem =~ /^block/",
+                    "group": "7_modification@2"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenBeside",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenFolder",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenWith",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "gnuradio-integration.fileOpenTimeline",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "4_timeline"
+                },
+                {
+                    "command": "gnuradio-integration.fileSelectForCompare",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "3_compare"
+                },
+                {
+                    "command": "gnuradio-integration.fileCompareSelected",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/) && resourceSelectedForCompare",
+                    "group": "3_compare"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPath",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "6_copypath"
+                },
+                {
+                    "command": "gnuradio-integration.fileCopyPathRelative",
+                    "when": "view == gnuradioModule && !(viewItem =~ /^block/)",
+                    "group": "6_copypath"
                 }
             ]
         },
+        "keybindings": [
+            {
+                "key": "f2",
+                "command": "gnuradio-integration.renameBlockInTree",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "delete",
+                "command": "gnuradio-integration.removeBlockInTree",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Ctrl+enter",
+                "command": "gnuradio-integration.fileOpenBeside",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+r",
+                "command": "gnuradio-integration.fileOpenFolder",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+c",
+                "command": "gnuradio-integration.fileCopyPath",
+                "when": "focusedView == gnuradioModule"
+            },
+            {
+                "key": "Alt+Ctrl+Shift+c",
+                "command": "gnuradio-integration.fileCopyPathRelative",
+                "when": "focusedView == gnuradioModule"
+            }
+        ],
         "configuration": {
-            "title": "GNURadio integration configuration",
+            "title": "GNURadio Integration",
             "properties": {
-                "gnuradio-integration.gnuradio-companion.cmd": {
+                "gnuradio-integration.gnuradioPrefix": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "GNURadio installation prefix (absolute path)  \nPlease use the output of `gnuradio-config-info --prefix`.  \nIf this property is not set, then GNURadio prefix is presumed to be in the selected Python environment (if `ms-python.python` extension is installed) or in PATH.  \nSee [InstallingGR](https://wiki.gnuradio.org/index.php?title=InstallingGR) for more details."
+                },
+                "gnuradio-integration.python.defaultInterpreter": {
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "Default Python interpreter command  \nOn Unix systems, `command -v` is used to determine the interpreter.  \nIf this property is not set, then `python` or `python3` is presumed to be in PATH."
+                },
+                "gnuradio-integration.python.defaultPythonpath": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": [ ],
+                    "markdownDescription": "Default `PYTHONPATH`  \nA collection of absolute paths to directories with additional Python libraries that can be imported by the interpreter."
+                },
+                "gnuradio-integration.companion.cmd": {
                     "type": "string",
                     "default": "gnuradio-companion",
-                    "description": "Path of GNURadio companion",
-                    "scope": "window"
+                    "description": "GNURadio Companion command",
+                    "deprecationMessage": "Please use GNURadio Prefix instead"
                 },
-                "gnuradio-integration.grcc.cmd": {
+                "gnuradio-integration.compiler.cmd": {
                     "type": "string",
                     "default": "grcc",
-                    "description": "Path of GNURadio CLI compiler",
-                    "scope": "window"
+                    "description": "GNURadio CLI compiler command",
+                    "deprecationMessage": "Please use GNURadio Prefix instead"
+                },
+                "gnuradio-integration.modtool.checkXml": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Check for XML block definitions when opening a module directory"
                 }
             }
         },
@@ -107,27 +455,46 @@
                     ".grc"
                 ]
             }
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"pretest": "npm run compile && npm run lint",
-		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.68.0",
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^9.1.1",
-		"@types/node": "16.x",
-		"@typescript-eslint/eslint-plugin": "^5.27.0",
-		"@typescript-eslint/parser": "^5.27.0",
-		"eslint": "^8.16.0",
-		"glob": "^8.0.3",
-		"mocha": "^10.0.0",
-		"typescript": "^4.7.2",
-		"@vscode/test-electron": "^2.1.3"
-	}
+        ],
+        "views": {
+            "explorer": [
+                {
+                    "id": "gnuradioModule",
+                    "name": "GNURadio Module",
+                    "contextualTitle": "GNURadio Module",
+                    "icon": "./imgs/gnuradio-integration-icon.png",
+                    "when": "gnuradio-integration.moduleFound"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.2.0",
+        "@types/mocha": "^9.1.1",
+        "@types/node": "16.x",
+        "@types/vscode": "^1.81.0",
+        "@typescript-eslint/eslint-plugin": "^5.27.0",
+        "@typescript-eslint/parser": "^5.27.0",
+        "@vscode/test-electron": "^2.1.3",
+        "@vscode/vsce": "^2.22.0",
+        "eslint": "^8.16.0",
+        "glob": "^8.0.3",
+        "mocha": "^10.0.0",
+        "typescript": "^4.7.2"
+    },
+    "dependencies": {
+        "@vscode/python-extension": "^1.0.5"
+    },
+    "extensionDependencies": [
+        "ms-python.python",
+        "vscode.git"
+    ]
 }
