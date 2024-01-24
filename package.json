@@ -426,7 +426,7 @@
                         "type": "string"
                     },
                     "uniqueItems": true,
-                    "default": [ ],
+                    "default": [],
                     "markdownDescription": "Default `PYTHONPATH`  \nA collection of absolute paths to directories with additional Python libraries that can be imported by the interpreter."
                 },
                 "gnuradio-integration.companion.cmd": {
@@ -484,7 +484,6 @@
         "@typescript-eslint/eslint-plugin": "^5.27.0",
         "@typescript-eslint/parser": "^5.27.0",
         "@vscode/test-electron": "^2.1.3",
-        "@vscode/vsce": "^2.22.0",
         "eslint": "^8.16.0",
         "glob": "^8.0.3",
         "mocha": "^10.0.0",
