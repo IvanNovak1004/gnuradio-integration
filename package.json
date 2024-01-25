@@ -2,7 +2,7 @@
     "name": "gnuradio-integration",
     "displayName": "GNURadio Integration",
     "description": "GNURadio Integration",
-    "version": "0.3.3",
+    "version": "0.3.4",
     "license": "MIT",
     "publisher": "AsriFox",
     "engines": {
@@ -426,7 +426,7 @@
                         "type": "string"
                     },
                     "uniqueItems": true,
-                    "default": [],
+                    "default": [ ],
                     "markdownDescription": "Default `PYTHONPATH`  \nA collection of absolute paths to directories with additional Python libraries that can be imported by the interpreter."
                 },
                 "gnuradio-integration.companion.cmd": {

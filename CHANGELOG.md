@@ -5,8 +5,16 @@ All notable changes to the "gnuradio-integration" extension will be documented i
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## [Unreleased]
+
+## [0.3.4] - 2024-01-25
+### Changed
+- Updated npm packages
+
 ### Fixed
 - Fixed modtool scripts being excluded from the published build
+
+### Removed
+- Removed @vscode/vsce from dev-dependencies
 
 ## [0.3.3] - 2023-12-31
 ### Added
@@ -144,7 +152,8 @@ a workaround to activate the extension when the module has no blocks yet
 ### Added
 - This is the initial release of gnuradio-integration VS Code extension
 
-[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/AsriFox/gnuradio-integration/compare/v0.3.0...v0.3.1
