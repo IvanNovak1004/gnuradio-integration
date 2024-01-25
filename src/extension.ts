@@ -118,7 +118,7 @@ export async function activate(context: ExtensionContext) {
         }),
     );
 
-    const scriptPath = Uri.joinPath(context.extensionUri, 'src', 'modtool').fsPath;
+    const scriptPath = Uri.joinPath(context.extensionUri, 'scripts', 'modtool').fsPath;
     const shell = python.PythonShell.default(
         scriptPath, context.extension.packageJSON.displayName,
         pythonInterp, { pythonpath, gnuradioPrefix });
